@@ -1,8 +1,7 @@
 <template>
   <div class="dashboard-container">
-    <AuthForm v-if="!userStore.user" />
-    <div v-if="userStore.user" class="user-info">
-      <span class="user-email">Logged in as: <strong>{{ userStore.user.email }}</strong></span>
+    <div class="user-info">
+      <span class="user-email">Logged in as: <strong>{{ userStore.user?.email }}</strong></span>
       <button @click="logout" class="logout-btn">
         Logout
       </button>
@@ -30,7 +29,7 @@
             <button @click="saveEdit(log.id)" class="btn btn-save">
               Save
             </button>
-            <button @click="editId = null" class="btn btn-cancel">
+            <button @click="cancelEdit" class="btn btn-cancel">
               Cancel
             </button>
           </div>
@@ -58,13 +57,15 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import InputForm from '@/components/InputForm.vue'
-import AuthForm from '@/components/AuthForm.vue'
 import { fetchLogs, createLog, deleteLog, updateLog } from '@/services/logService'
 import { useUserStore } from '@/stores/userStore'
 import { auth } from '@/firebase'
 import { signOut } from 'firebase/auth'
+
+const router = useRouter()
 
 const logs = ref([])
 const userStore = useUserStore()
@@ -73,6 +74,13 @@ const editContent = ref('')
 const editMood = ref('')
 const editCategory = ref('')
 const user = computed(() => userStore.user)
+
+// Redirect to login if not authenticated
+onMounted(() => {
+  if (!userStore.user) {
+    router.push('/login')
+  }
+})
 
 watch(
   () => userStore.user,
@@ -90,6 +98,7 @@ watch(
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
     } else {
       logs.value = []
+      router.push('/login')
     }
   },
   { immediate: true },
@@ -117,11 +126,10 @@ async function saveEdit(id) {
   const updated = await updateLog(
     id,
     editContent.value,
-    log.userId,
-    log.timestamp,
     editMood.value,
     editCategory.value,
   )
+  console.log('saveEdit updated response:', updated)
 
   const index = logs.value.findIndex((l) => l.id === id)
   if (index !== -1) {
@@ -130,6 +138,13 @@ async function saveEdit(id) {
     logs.value[index].category = updated.category
   }
   editId.value = null
+}
+
+function cancelEdit() {
+  editId.value = null
+  editContent.value = ''
+  editMood.value = ''
+  editCategory.value = ''
 }
 
 async function addLog(logData) {
@@ -157,7 +172,7 @@ function logout() {
   signOut(auth)
     .then(() => {
       userStore.clearUser()
-      alert('Logged out successfully.')
+      router.push('/login')
     })
     .catch((error) => {
       alert('Error logging out: ' + error.message)

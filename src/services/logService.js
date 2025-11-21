@@ -9,12 +9,12 @@ export async function deleteLog(id) {
   return fetch(`${BASE_URL}/${id}`, { method: 'DELETE' })
 }
 
-export async function updateLog(id, content, userId, timestamp, mood, category) {
-  console.log('updateLog called with:', { id, content, userId, timestamp, mood, category })
+export async function updateLog(id, content, mood, category) {
+  console.log('updateLog payload:', { id, content, mood, category })
   const res = await fetch(`${BASE_URL}/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id, content, userId, timestamp, mood, category }),
+    body: JSON.stringify({ id, content, mood, category }),
   })
 
   if (!res.ok) {

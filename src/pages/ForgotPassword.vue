@@ -2,10 +2,10 @@
   <div class="auth-page">
     <div class="auth-container">
       <div class="auth-card">
-        <h1 class="auth-title">Welcome Back! 👋</h1>
-        <p class="auth-subtitle">Sign in to continue to Smart Memory</p>
+        <h1 class="auth-title">Reset Password 🔑</h1>
+        <p class="auth-subtitle">Enter your email to receive a password reset link</p>
 
-        <form @submit.prevent="handleLogin" class="auth-form">
+        <form v-if="!emailSent" @submit.prevent="handleForgotPassword" class="auth-form">
           <div class="form-group">
             <label for="email" class="form-label">Email</label>
             <input
@@ -19,31 +19,21 @@
             />
           </div>
 
-          <div class="form-group">
-            <label for="password" class="form-label">Password</label>
-            <input
-              id="password"
-              type="password"
-              v-model="password"
-              required
-              class="form-input"
-              placeholder="••••••••"
-              autocomplete="current-password"
-            />
-          </div>
-
           <button type="submit" class="submit-btn" :disabled="loading">
-            {{ loading ? 'Signing in...' : 'Sign In' }}
+            {{ loading ? 'Sending...' : 'Send Reset Link' }}
           </button>
         </form>
 
+        <div v-else class="success-container">
+          <div class="success-icon">✅</div>
+          <p class="success-text">Password reset email sent!</p>
+          <p class="success-subtext">Check your inbox for the reset link.</p>
+        </div>
+
         <p class="toggle-text">
-  Don't have an account?
-  <router-link to="/register" class="toggle-link">Create one</router-link>
-</p>
-<p class="forgot-text">
-  <router-link to="/forgot-password" class="forgot-link">Forgot password?</router-link>
-</p>
+          Remember your password?
+          <router-link to="/login" class="toggle-link">Sign in</router-link>
+        </p>
 
         <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
       </div>
@@ -53,36 +43,29 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { auth } from '@/firebase'
-import { useUserStore } from '@/stores/userStore'
-import { signInWithEmailAndPassword } from 'firebase/auth'
-
-const router = useRouter()
-const userStore = useUserStore()
+import { sendPasswordResetEmail } from 'firebase/auth'
 
 const email = ref('')
-const password = ref('')
 const loading = ref(false)
 const errorMessage = ref('')
+const emailSent = ref(false)
 
-async function handleLogin() {
+async function handleForgotPassword() {
   errorMessage.value = ''
   loading.value = true
 
   try {
-    const userCredential = await signInWithEmailAndPassword(auth, email.value, password.value)
-    const user = userCredential.user
-
-    userStore.setUser({
-      uid: user.uid,
-      email: user.email,
-    })
-
-    // Redirect to dashboard
-    router.push('/dashboard')
+    await sendPasswordResetEmail(auth, email.value)
+    emailSent.value = true
   } catch (error) {
-    errorMessage.value = error.message
+    if (error.code === 'auth/user-not-found') {
+      errorMessage.value = 'No account found with this email address.'
+    } else if (error.code === 'auth/invalid-email') {
+      errorMessage.value = 'Please enter a valid email address.'
+    } else {
+      errorMessage.value = error.message
+    }
   } finally {
     loading.value = false
   }
@@ -121,7 +104,7 @@ async function handleLogin() {
   left: 0;
   right: 0;
   height: 4px;
-  background: var(--gradient-primary);
+  background: linear-gradient(135deg, hsl(45, 90%, 55%) 0%, hsl(30, 85%, 60%) 100%);
 }
 
 .auth-title {
@@ -130,7 +113,7 @@ async function handleLogin() {
   color: var(--color-heading);
   margin-bottom: 0.5rem;
   text-align: center;
-  background: var(--gradient-primary);
+  background: linear-gradient(135deg, hsl(45, 90%, 55%) 0%, hsl(30, 85%, 60%) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -179,14 +162,14 @@ async function handleLogin() {
 
 .form-input:focus {
   outline: none;
-  border-color: var(--primary-400);
-  box-shadow: 0 0 0 4px var(--primary-100);
+  border-color: hsl(45, 90%, 55%);
+  box-shadow: 0 0 0 4px hsl(45, 90%, 92%);
 }
 
 .submit-btn {
   width: 100%;
   padding: 0.875rem 1.5rem;
-  background: var(--gradient-primary);
+  background: linear-gradient(135deg, hsl(45, 90%, 55%) 0%, hsl(30, 85%, 60%) 100%);
   color: white;
   border: none;
   border-radius: var(--radius-md);
@@ -200,7 +183,7 @@ async function handleLogin() {
 
 .submit-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  box-shadow: var(--shadow-lg), 0 0 20px rgba(255, 200, 100, 0.3);
 }
 
 .submit-btn:active:not(:disabled) {
@@ -210,6 +193,28 @@ async function handleLogin() {
 .submit-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.success-container {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.success-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.success-text {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--success);
+  margin-bottom: 0.5rem;
+}
+
+.success-subtext {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
 }
 
 .toggle-text {
