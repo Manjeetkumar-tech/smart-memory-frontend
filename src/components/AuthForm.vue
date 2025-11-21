@@ -1,42 +1,46 @@
 <template>
-  <div class="max-w-md mx-auto p-4 border rounded shadow">
-    <h2 class="text-xl font-bold mb-4">{{ isRegister ? 'Register' : 'Login' }}</h2>
+  <div class="auth-container">
+    <div class="auth-card">
+      <h2 class="auth-title">{{ isRegister ? 'Register' : 'Login' }}</h2>
 
-    <form @submit.prevent="submitForm">
-      <div class="mb-4">
-        <label for="email" class="block mb-1">Email</label>
-        <input
-          id="email"
-          type="email"
-          v-model="email"
-          required
-          class="w-full border rounded px-3 py-2"
-        />
-      </div>
+      <form @submit.prevent="submitForm" class="auth-form">
+        <div class="form-group">
+          <label for="email" class="form-label">Email</label>
+          <input
+            id="email"
+            type="email"
+            v-model="email"
+            required
+            class="form-input"
+            placeholder="you@example.com"
+          />
+        </div>
 
-      <div class="mb-4">
-        <label for="password" class="block mb-1">Password</label>
-        <input
-          id="password"
-          type="password"
-          v-model="password"
-          required
-          class="w-full border rounded px-3 py-2"
-        />
-      </div>
+        <div class="form-group">
+          <label for="password" class="form-label">Password</label>
+          <input
+            id="password"
+            type="password"
+            v-model="password"
+            required
+            class="form-input"
+            placeholder="••••••••"
+          />
+        </div>
 
-      <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
-        {{ isRegister ? 'Register' : 'Login' }}
-      </button>
-    </form>
+        <button type="submit" class="submit-btn">
+          {{ isRegister ? 'Register' : 'Login' }}
+        </button>
+      </form>
 
-    <p class="mt-4 text-center">
-      <button @click="toggleMode" class="text-blue-600 underline">
-        {{ isRegister ? 'Already have an account? Login' : "Don't have an account? Register" }}
-      </button>
-    </p>
+      <p class="toggle-text">
+        <button @click="toggleMode" class="toggle-btn">
+          {{ isRegister ? 'Already have an account? Login' : "Don't have an account? Register" }}
+        </button>
+      </p>
 
-    <p v-if="errorMessage" class="mt-2 text-red-600 text-center">{{ errorMessage }}</p>
+      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+    </div>
   </div>
 </template>
 
@@ -85,5 +89,150 @@ async function submitForm() {
 </script>
 
 <style scoped>
-/* Add any styling you want here */
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 2rem 0;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 450px;
+  padding: 2.5rem;
+  background: var(--gradient-card);
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--color-border);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gradient-primary);
+}
+
+.auth-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-heading);
+  margin-bottom: 2rem;
+  text-align: center;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all var(--transition-base);
+  background: white;
+  color: var(--color-heading);
+}
+
+.form-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary-400);
+  box-shadow: 0 0 0 4px var(--primary-100);
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  background: var(--gradient-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-md);
+  margin-top: 0.5rem;
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+}
+
+.submit-btn:active {
+  transform: translateY(0);
+}
+
+.toggle-text {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: var(--primary-500);
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color var(--transition-base);
+  padding: 0;
+}
+
+.toggle-btn:hover {
+  color: var(--primary-600);
+}
+
+.error-message {
+  margin-top: 1rem;
+  padding: 0.875rem;
+  background: hsl(0, 84%, 95%);
+  color: var(--error);
+  border-radius: var(--radius-md);
+  text-align: center;
+  font-size: 0.9rem;
+  border: 1px solid hsl(0, 84%, 85%);
+}
+
+@media (max-width: 640px) {
+  .auth-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .auth-title {
+    font-size: 1.5rem;
+  }
+}
 </style>

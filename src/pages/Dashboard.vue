@@ -1,59 +1,59 @@
 <template>
-  <div class="p-6 space-y-4">
+  <div class="dashboard-container">
     <AuthForm v-if="!userStore.user" />
-    <div v-if="userStore.user">
-      Logged in as: <strong>{{ userStore.user.email }}</strong>
-      <button @click="logout" class="ml-4 px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600">
+    <div v-if="userStore.user" class="user-info">
+      <span class="user-email">Logged in as: <strong>{{ userStore.user.email }}</strong></span>
+      <button @click="logout" class="logout-btn">
         Logout
       </button>
     </div>
-    <h1 class="text-2xl font-bold">📘 Your Memory Logs</h1>
+    <h1 class="dashboard-title">📘 Your Memory Logs</h1>
 
     <!-- Input Form -->
     <InputForm @submit-log="addLog" />
 
     <!-- Logs List -->
-    <div v-if="logs.length" class="space-y-2">
-      <div v-for="(log, index) in logs" :key="index" class="p-3 rounded border bg-white">
-        <div v-if="editId === log.id">
+    <div v-if="logs.length" class="logs-container">
+      <div v-for="(log, index) in logs" :key="index" class="log-card">
+        <div v-if="editId === log.id" class="edit-mode">
           <textarea
             v-model="editContent"
-            class="w-full border px-2 py-1 rounded resize-none"
+            class="edit-textarea"
           ></textarea>
-          <input v-model="editMood" placeholder="Mood" class="mt-2 w-full p-1 border rounded" />
+          <input v-model="editMood" placeholder="Mood" class="edit-input" />
           <input
             v-model="editCategory"
             placeholder="Category"
-            class="mt-2 w-full p-1 border rounded"
+            class="edit-input"
           />
-          <div class="mt-2 space-x-2">
-            <button @click="saveEdit(log.id)" class="px-2 py-1 bg-green-500 text-white rounded">
+          <div class="edit-actions">
+            <button @click="saveEdit(log.id)" class="btn btn-save">
               Save
             </button>
-            <button @click="editId = null" class="px-2 py-1 bg-gray-400 text-white rounded">
+            <button @click="editId = null" class="btn btn-cancel">
               Cancel
             </button>
           </div>
         </div>
-        <div v-else>
-          <p class="whitespace-pre-wrap">{{ log.text }}</p>
-          <div class="text-sm text-gray-500 mt-1">
-            <span><strong>Mood:</strong> {{ log.mood || 'N/A' }}</span>
-            <span class="ml-4"><strong>Category:</strong> {{ log.category || 'N/A' }}</span>
+        <div v-else class="view-mode">
+          <p class="log-text">{{ log.text }}</p>
+          <div class="log-meta">
+            <span class="meta-item"><strong>Mood:</strong> {{ log.mood || 'N/A' }}</span>
+            <span class="meta-item"><strong>Category:</strong> {{ log.category || 'N/A' }}</span>
           </div>
-          <div class="text-sm text-gray-500">{{ new Date(log.timestamp).toLocaleString() }}</div>
-          <div class="mt-2 space-x-2">
-            <button @click="startEdit(log)" class="px-2 py-1 bg-blue-500 text-white rounded">
+          <div class="log-timestamp">{{ new Date(log.timestamp).toLocaleString() }}</div>
+          <div class="log-actions">
+            <button @click="startEdit(log)" class="btn btn-edit">
               Edit
             </button>
-            <button @click="handleDelete(log.id)" class="px-2 py-1 bg-red-500 text-white rounded">
+            <button @click="handleDelete(log.id)" class="btn btn-delete">
               Delete
             </button>
           </div>
         </div>
       </div>
     </div>
-    <p v-else class="text-gray-500">No logs yet. Start by adding one above ⬆️</p>
+    <p v-else class="empty-state">No logs yet. Start by adding one above ⬆️</p>
   </div>
 </template>
 
@@ -164,3 +164,266 @@ function logout() {
     })
 }
 </script>
+
+<style scoped>
+.dashboard-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: var(--gradient-card);
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--color-border);
+}
+
+.user-email {
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.logout-btn {
+  padding: 0.5rem 1.25rem;
+  background: var(--error);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+}
+
+.logout-btn:hover {
+  background: hsl(0, 84%, 50%);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.dashboard-title {
+  font-size: 2rem;
+  font-weight: 700;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.logs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.log-card {
+  background: var(--gradient-card);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
+}
+
+.log-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+  border-color: var(--primary-200);
+}
+
+.view-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.log-text {
+  color: var(--color-heading);
+  font-size: 1rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.log-meta {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.meta-item strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.log-timestamp {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.log-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.edit-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.edit-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: all var(--transition-base);
+  background: white;
+}
+
+.edit-textarea:focus {
+  outline: none;
+  border-color: var(--primary-400);
+  box-shadow: 0 0 0 3px var(--primary-100);
+}
+
+.edit-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: all var(--transition-base);
+  background: white;
+}
+
+.edit-input:focus {
+  outline: none;
+  border-color: var(--primary-400);
+  box-shadow: 0 0 0 3px var(--primary-100);
+}
+
+.edit-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn {
+  padding: 0.625rem 1.25rem;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn-edit {
+  background: var(--primary-500);
+  color: white;
+}
+
+.btn-edit:hover {
+  background: var(--primary-600);
+}
+
+.btn-delete {
+  background: var(--error);
+  color: white;
+}
+
+.btn-delete:hover {
+  background: hsl(0, 84%, 50%);
+}
+
+.btn-save {
+  background: var(--success);
+  color: white;
+}
+
+.btn-save:hover {
+  background: hsl(142, 76%, 40%);
+}
+
+.btn-cancel {
+  background: var(--neutral-400);
+  color: white;
+}
+
+.btn-cancel:hover {
+  background: var(--neutral-500);
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+  margin-top: 3rem;
+  padding: 2rem;
+  background: var(--gradient-card);
+  border-radius: var(--radius-lg);
+  border: 2px dashed var(--color-border);
+}
+
+@media (max-width: 640px) {
+  .dashboard-container {
+    padding: 1rem 0.5rem;
+  }
+
+  .user-info {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .dashboard-title {
+    font-size: 1.5rem;
+  }
+
+  .log-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .log-actions,
+  .edit-actions {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}
+</style>
