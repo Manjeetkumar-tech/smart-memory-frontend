@@ -23,3 +23,10 @@ export async function getItem(id) {
   const res = await fetch(`${BASE_URL}/${id}`)
   return res.json()
 }
+
+export async function claimItem(itemId, userId) {
+  const res = await fetch(`${BASE_URL}/${itemId}/claim?userId=${userId}`, {
+    method: 'PUT'
+  })
+  return res.json()
+}

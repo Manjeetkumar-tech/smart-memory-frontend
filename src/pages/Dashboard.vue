@@ -11,6 +11,14 @@
     <!-- Input Form -->
     <InputForm @submit-item="addItem" />
 
+    <!-- My Items Toggle -->
+    <div class="my-items-toggle">
+      <label class="toggle-label">
+        <input type="checkbox" v-model="showMyItemsOnly" class="toggle-checkbox" />
+        <span class="toggle-text">Show My Items Only</span>
+      </label>
+    </div>
+
     <!-- Filter Tabs -->
     <div class="filter-tabs">
       <button 
@@ -69,6 +77,16 @@
           </div>
         </div>
         <div class="item-actions">
+          <button 
+            v-if="!isMyItem(item) && !item.claimedBy" 
+            @click="handleClaim(item.id)" 
+            class="btn btn-claim"
+          >
+            Claim Item
+          </button>
+          <span v-if="item.claimedBy" class="claimed-badge">
+            {{ item.claimedBy === userStore.user?.uid ? '✓ Claimed by you' : '✓ Claimed' }}
+          </span>
           <button @click="handleDelete(item.id)" class="btn btn-delete">
             Delete
           </button>
@@ -84,7 +102,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import InputForm from '@/components/InputForm.vue'
 import MapDisplay from '@/components/MapDisplay.vue'
-import { fetchItems, createItem, deleteItem } from '@/services/itemService'
+import { fetchItems, createItem, deleteItem, claimItem } from '@/services/itemService'
 import { useUserStore } from '@/stores/userStore'
 import { auth } from '@/firebase'
 import { signOut } from 'firebase/auth'
@@ -93,11 +111,23 @@ const router = useRouter()
 
 const items = ref([])
 const filterType = ref(null)
+const showMyItemsOnly = ref(false)
 const userStore = useUserStore()
 
 const filteredItems = computed(() => {
-  if (!filterType.value) return items.value
-  return items.value.filter(item => item.type === filterType.value)
+  let filtered = items.value
+  
+  // Filter by type if selected
+  if (filterType.value) {
+    filtered = filtered.filter(item => item.type === filterType.value)
+  }
+  
+  // Filter by user if toggle is on
+  if (showMyItemsOnly.value && userStore.user) {
+    filtered = filtered.filter(item => item.userId === userStore.user.uid)
+  }
+  
+  return filtered
 })
 
 // Redirect to login if not authenticated
@@ -141,6 +171,30 @@ async function handleDelete(id) {
   }
 }
 
+async function handleClaim(itemId) {
+  if (!userStore.user) {
+    alert('Please login to claim items.')
+    return
+  }
+  
+  if (!confirm('Do you want to claim this item?')) return
+  
+  try {
+    const updated = await claimItem(itemId, userStore.user.uid)
+    const index = items.value.findIndex((item) => item.id === itemId)
+    if (index !== -1) {
+      items.value[index] = updated
+    }
+  } catch (error) {
+    console.error('Error claiming item:', error)
+    alert('Failed to claim item')
+  }
+}
+
+function isMyItem(item) {
+  return item.userId === userStore.user?.uid
+}
+
 async function addItem(itemData) {
   if (!userStore.user) {
     alert('Please login to add items.')
@@ -148,7 +202,10 @@ async function addItem(itemData) {
   }
   
   try {
-    const newItem = await createItem(itemData)
+    const newItem = await createItem({
+      ...itemData,
+      userId: userStore.user.uid
+    })
     items.value.unshift(newItem)
   } catch (error) {
     console.error('Error creating item:', error)
@@ -225,6 +282,40 @@ function logout() {
   background-clip: text;
   margin-bottom: 1.5rem;
   text-align: center;
+}
+
+.my-items-toggle {
+  display: flex;
+  justify-content: center;
+  margin: 1.5rem 0;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  padding: 0.75rem 1.25rem;
+  background: white;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-base);
+}
+
+.toggle-label:hover {
+  border-color: var(--primary-400);
+  box-shadow: var(--shadow-sm);
+}
+
+.toggle-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.toggle-text {
+  font-weight: 500;
+  color: var(--color-heading);
 }
 
 .filter-tabs {
@@ -393,6 +484,24 @@ function logout() {
 
 .btn-delete:hover {
   background: hsl(0, 84%, 50%);
+}
+
+.btn-claim {
+  background: var(--success);
+  color: white;
+}
+
+.btn-claim:hover {
+  background: hsl(142, 76%, 40%);
+}
+
+.claimed-badge {
+  padding: 0.625rem 1.25rem;
+  background: hsl(142, 76%, 95%);
+  color: var(--success);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
 .empty-state {
