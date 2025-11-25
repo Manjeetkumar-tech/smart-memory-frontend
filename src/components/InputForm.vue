@@ -1,31 +1,60 @@
 <template>
-  <form @submit.prevent="submitLog" class="input-form">
+  <form @submit.prevent="submitItem" class="input-form">
     <div class="form-header">
-      <h3 class="form-title">✍️ Add New Memory</h3>
+      <h3 class="form-title">📦 Report Lost/Found Item</h3>
     </div>
+    
+    <div class="form-row">
+      <select v-model="itemType" class="form-select" required>
+        <option value="">Select Type</option>
+        <option value="LOST">Lost Item</option>
+        <option value="FOUND">Found Item</option>
+      </select>
+    </div>
+
+    <input
+      v-model="title"
+      type="text"
+      placeholder="Item name (e.g. Blue Backpack)"
+      class="form-input"
+      required
+    />
+
     <textarea
-      v-model="logText"
-      placeholder="What did you do today?"
+      v-model="description"
+      placeholder="Describe the item in detail..."
       rows="4"
       class="form-textarea"
+      required
     ></textarea>
+
     <div class="form-row">
       <input
-        v-model="mood"
+        v-model="location"
         type="text"
-        placeholder="Mood (e.g. happy, sad)"
+        placeholder="Location (e.g. Library, Room 101)"
         class="form-input"
+        required
       />
       <input
-        v-model="category"
-        type="text"
-        placeholder="Category (e.g. work, personal)"
+        v-model="date"
+        type="date"
         class="form-input"
+        required
       />
     </div>
+
+    <input
+      v-model="contactInfo"
+      type="text"
+      placeholder="Contact info (email or phone)"
+      class="form-input"
+      required
+    />
+
     <button type="submit" class="submit-btn">
-      <span class="btn-icon">💾</span>
-      Save Log
+      <span class="btn-icon">📤</span>
+      Submit Report
     </button>
   </form>
 </template>
@@ -33,21 +62,34 @@
 <script setup>
 import { ref } from 'vue'
 
-const emit = defineEmits(['submit-log'])
-const logText = ref('')
-const mood = ref('')
-const category = ref('')
+const emit = defineEmits(['submit-item'])
+const title = ref('')
+const description = ref('')
+const location = ref('')
+const date = ref('')
+const itemType = ref('')
+const contactInfo = ref('')
 
-function submitLog() {
-  if (!logText.value.trim()) return
-  emit('submit-log', {
-    content: logText.value,
-    mood: mood.value,
-    category: category.value,
+function submitItem() {
+  if (!title.value.trim() || !description.value.trim() || !itemType.value) return
+  
+  emit('submit-item', {
+    title: title.value,
+    description: description.value,
+    location: location.value,
+    date: date.value,
+    type: itemType.value,
+    contactInfo: contactInfo.value,
+    status: 'OPEN'
   })
-  logText.value = ''
-  mood.value = ''
-  category.value = ''
+  
+  // Reset form
+  title.value = ''
+  description.value = ''
+  location.value = ''
+  date.value = ''
+  itemType.value = ''
+  contactInfo.value = ''
 }
 </script>
 
@@ -120,7 +162,8 @@ function submitLog() {
   margin-bottom: 1.25rem;
 }
 
-.form-input {
+.form-input,
+.form-select {
   width: 100%;
   padding: 0.875rem 1rem;
   border: 2px solid var(--color-border);
@@ -136,7 +179,8 @@ function submitLog() {
   color: var(--color-text-muted);
 }
 
-.form-input:focus {
+.form-input:focus,
+.form-select:focus {
   outline: none;
   border-color: var(--accent-500);
   box-shadow: 0 0 0 4px hsl(180, 80%, 92%);
