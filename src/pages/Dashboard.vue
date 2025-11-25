@@ -46,6 +46,17 @@
         </div>
         <h3 class="item-title">{{ item.title }}</h3>
         <p class="item-description">{{ item.description }}</p>
+        
+        <!-- Map display if coordinates available -->
+        <div v-if="item.latitude && item.longitude" class="item-map">
+          <MapDisplay 
+            :latitude="item.latitude" 
+            :longitude="item.longitude"
+            :marker-title="item.title"
+            height="150px"
+          />
+        </div>
+        
         <div class="item-details">
           <div class="detail-item">
             <strong>📍 Location:</strong> {{ item.location }}
@@ -72,6 +83,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import InputForm from '@/components/InputForm.vue'
+import MapDisplay from '@/components/MapDisplay.vue'
 import { fetchItems, createItem, deleteItem } from '@/services/itemService'
 import { useUserStore } from '@/stores/userStore'
 import { auth } from '@/firebase'
@@ -322,6 +334,12 @@ function logout() {
   color: var(--color-text);
   line-height: 1.6;
   margin: 0;
+}
+
+.item-map {
+  margin-top: 1rem;
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .item-details {

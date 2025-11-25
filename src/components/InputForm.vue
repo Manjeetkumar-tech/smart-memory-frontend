@@ -29,12 +29,11 @@
     ></textarea>
 
     <div class="form-row">
-      <input
+      <LocationSearch
         v-model="location"
-        type="text"
-        placeholder="Location (e.g. Library, Room 101)"
-        class="form-input"
-        required
+        placeholder="Search for location..."
+        @location-selected="handleLocationSelected"
+        class="location-search-wrapper"
       />
       <input
         v-model="date"
@@ -61,14 +60,23 @@
 
 <script setup>
 import { ref } from 'vue'
+import LocationSearch from './LocationSearch.vue'
 
 const emit = defineEmits(['submit-item'])
 const title = ref('')
 const description = ref('')
 const location = ref('')
+const latitude = ref(null)
+const longitude = ref(null)
 const date = ref('')
 const itemType = ref('')
 const contactInfo = ref('')
+
+function handleLocationSelected(locationData) {
+  location.value = locationData.address
+  latitude.value = locationData.latitude
+  longitude.value = locationData.longitude
+}
 
 function submitItem() {
   if (!title.value.trim() || !description.value.trim() || !itemType.value) return
@@ -77,6 +85,8 @@ function submitItem() {
     title: title.value,
     description: description.value,
     location: location.value,
+    latitude: latitude.value,
+    longitude: longitude.value,
     date: date.value,
     type: itemType.value,
     contactInfo: contactInfo.value,
@@ -87,6 +97,8 @@ function submitItem() {
   title.value = ''
   description.value = ''
   location.value = ''
+  latitude.value = null
+  longitude.value = null
   date.value = ''
   itemType.value = ''
   contactInfo.value = ''
@@ -159,7 +171,11 @@ function submitItem() {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.location-search-wrapper {
+  flex: 1;
 }
 
 .form-input,
