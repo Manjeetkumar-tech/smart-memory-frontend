@@ -6,7 +6,9 @@
         Logout
       </button>
     </div>
-    <h1 class="dashboard-title">🔍 Lost & Found Dashboard</h1>
+    <div class="dashboard-header">
+      <h1 class="dashboard-title">🔍 Lost & Found Dashboard</h1>
+    </div>
 
     <!-- Input Form -->
     <InputForm 
@@ -112,7 +114,11 @@
           >
             ✏️ Edit
           </button>
-          <button @click="handleDelete(item.id)" class="btn btn-delete">
+          <button 
+            v-if="isMyItem(item)"
+            @click="handleDelete(item.id)" 
+            class="btn btn-delete"
+          >
             Delete
           </button>
         </div>
@@ -131,7 +137,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import InputForm from '@/components/InputForm.vue'
 import MapDisplay from '@/components/MapDisplay.vue'
@@ -148,6 +154,10 @@ const showMyItemsOnly = ref(false)
 const selectedImage = ref(null)
 const editingItem = ref(null)
 const userStore = useUserStore()
+
+onMounted(() => {
+  loadItems()
+})
 
 function openImageModal(url) {
   selectedImage.value = url
@@ -216,7 +226,17 @@ async function handleClaim(itemId) {
     return
   }
   
-  if (!confirm('Do you want to claim this item?')) return
+  // Fraud prevention: Ask verification question
+  const verification = prompt('To verify this is your item, please provide a brief description or unique detail about it:')
+  
+  if (!verification || verification.trim().length < 5) {
+    alert('Please provide a detailed verification (at least 5 characters)')
+    return
+  }
+  
+  if (!confirm('After claiming, the item owner will be notified. Confirm claim?')) {
+    return
+  }
   
   try {
     const updated = await claimItem(itemId, userStore.user.uid)
@@ -224,9 +244,10 @@ async function handleClaim(itemId) {
     if (index !== -1) {
       items.value[index] = updated
     }
+    alert('Item claimed! The finder has been notified.')
   } catch (error) {
     console.error('Error claiming item:', error)
-    alert('Failed to claim item')
+    alert('Failed to claim item. Please try again.')
   }
 }
 
@@ -598,10 +619,20 @@ function logout() {
 .claimed-badge {
   padding: 0.625rem 1.25rem;
   background: hsl(142, 76%, 95%);
-  color: var(--success);
-  border-radius: var(--radius-md);
+  color: hsl(142, 76%, 36%);
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
   font-weight: 600;
-  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
 }
 
 .empty-state {
