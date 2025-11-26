@@ -9,7 +9,11 @@
     <h1 class="dashboard-title">🔍 Lost & Found Dashboard</h1>
 
     <!-- Input Form -->
-    <InputForm @submit-item="addItem" />
+    <InputForm 
+      @submit-item="addItem" 
+      :editing-item="editingItem"
+      @clear-edit="editingItem = null"
+    />
 
     <!-- My Items Toggle -->
     <div class="my-items-toggle">
@@ -65,6 +69,20 @@
           />
         </div>
         
+        <!-- Image Gallery -->
+        <div v-if="item.imageUrls && item.imageUrls.length" class="item-images">
+          <div class="image-grid">
+            <img 
+              v-for="(url, idx) in item.imageUrls" 
+              :key="idx"
+              :src="url" 
+              :alt="`${item.title} ${idx + 1}`"
+              class="item-image"
+              @click="openImageModal(url)"
+            />
+          </div>
+        </div>
+        
         <div class="item-details">
           <div class="detail-item">
             <strong>📍 Location:</strong> {{ item.location }}
@@ -78,7 +96,7 @@
         </div>
         <div class="item-actions">
           <button 
-            v-if="!isMyItem(item) && !item.claimedBy" 
+            v-if="!isMyItem(item) && !item.claimedBy && item.type === 'FOUND'" 
             @click="handleClaim(item.id)" 
             class="btn btn-claim"
           >
@@ -87,6 +105,13 @@
           <span v-if="item.claimedBy" class="claimed-badge">
             {{ item.claimedBy === userStore.user?.uid ? '✓ Claimed by you' : '✓ Claimed' }}
           </span>
+          <button 
+            v-if="isMyItem(item)" 
+            @click="handleEdit(item)" 
+            class="btn btn-edit"
+          >
+            ✏️ Edit
+          </button>
           <button @click="handleDelete(item.id)" class="btn btn-delete">
             Delete
           </button>
@@ -94,6 +119,14 @@
       </div>
     </div>
     <p v-else class="empty-state">No items yet. Start by reporting one above ⬆️</p>
+  </div>
+
+  <!-- Image Modal -->
+  <div v-if="selectedImage" class="image-modal" @click="selectedImage = null">
+    <div class="modal-content" @click.stop>
+      <button class="modal-close" @click="selectedImage = null">✕</button>
+      <img :src="selectedImage" alt="Full size image" class="modal-image" />
+    </div>
   </div>
 </template>
 
@@ -112,7 +145,13 @@ const router = useRouter()
 const items = ref([])
 const filterType = ref(null)
 const showMyItemsOnly = ref(false)
+const selectedImage = ref(null)
+const editingItem = ref(null)
 const userStore = useUserStore()
+
+function openImageModal(url) {
+  selectedImage.value = url
+}
 
 const filteredItems = computed(() => {
   let filtered = items.value
@@ -195,6 +234,15 @@ function isMyItem(item) {
   return item.userId === userStore.user?.uid
 }
 
+function handleEdit(item) {
+  // Scroll to top to show form
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+  
+  // Emit edit event to InputForm
+  // We'll need to add a ref to InputForm and call a method on it
+  editingItem.value = item
+}
+
 async function addItem(itemData) {
   if (!userStore.user) {
     alert('Please login to add items.')
@@ -202,14 +250,33 @@ async function addItem(itemData) {
   }
   
   try {
-    const newItem = await createItem({
-      ...itemData,
-      userId: userStore.user.uid
-    })
-    items.value.unshift(newItem)
+    if (editingItem.value) {
+      // Update existing item
+      const response = await fetch(`http://localhost:8080/api/items/${editingItem.value.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...itemData,
+          userId: userStore.user.uid
+        })
+      })
+      const updatedItem = await response.json()
+      const index = items.value.findIndex(item => item.id === editingItem.value.id)
+      if (index !== -1) {
+        items.value[index] = updatedItem
+      }
+      editingItem.value = null
+    } else {
+      // Create new item
+      const newItem = await createItem({
+        ...itemData,
+        userId: userStore.user.uid
+      })
+      items.value.unshift(newItem)
+    }
   } catch (error) {
-    console.error('Error creating item:', error)
-    alert('Failed to create item')
+    console.error('Error saving item:', error)
+    alert('Failed to save item')
   }
 }
 
@@ -433,6 +500,30 @@ function logout() {
   overflow: hidden;
 }
 
+.item-images {
+  margin-top: 1rem;
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 0.5rem;
+}
+
+.item-image {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: transform var(--transition-base);
+  border: 1px solid var(--color-border);
+}
+
+.item-image:hover {
+  transform: scale(1.05);
+}
+
 .item-details {
   display: flex;
   flex-direction: column;
@@ -495,6 +586,15 @@ function logout() {
   background: hsl(142, 76%, 40%);
 }
 
+.btn-edit {
+  background: var(--primary-500);
+  color: white;
+}
+
+.btn-edit:hover {
+  background: var(--primary-600);
+}
+
 .claimed-badge {
   padding: 0.625rem 1.25rem;
   background: hsl(142, 76%, 95%);
@@ -508,11 +608,7 @@ function logout() {
   text-align: center;
   color: var(--color-text-muted);
   font-size: 1.1rem;
-  margin-top: 3rem;
-  padding: 2rem;
-  background: var(--gradient-card);
-  border-radius: var(--radius-lg);
-  border: 2px dashed var(--color-border);
+  padding: 3rem;
 }
 
 @media (max-width: 640px) {

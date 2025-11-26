@@ -45,24 +45,35 @@
 
     <input
       v-model="contactInfo"
-      type="text"
-      placeholder="Contact info (email or phone)"
+      type="email"
+      placeholder="Contact Email"
       class="form-input"
       required
     />
 
+    <!-- Image Upload -->
+    <ImageUpload v-model="imageUrls" :key="formKey" />
+
     <button type="submit" class="submit-btn">
-      <span class="btn-icon">📤</span>
-      Submit Report
+      <span class="btn-icon">{{ editingItem ? '💾' : '📤' }}</span>
+      {{ editingItem ? 'Update Item' : 'Submit Report' }}
     </button>
   </form>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import LocationSearch from './LocationSearch.vue'
+import ImageUpload from './ImageUpload.vue'
 
-const emit = defineEmits(['submit-item'])
+const emit = defineEmits(['submit-item', 'clear-edit'])
+const props = defineProps({
+  editingItem: {
+    type: Object,
+    default: null
+  }
+})
+
 const title = ref('')
 const description = ref('')
 const location = ref('')
@@ -71,6 +82,24 @@ const longitude = ref(null)
 const date = ref('')
 const itemType = ref('')
 const contactInfo = ref('')
+const imageUrls = ref([])
+const formKey = ref(0) // Key to force ImageUpload reset
+
+// Watch for editing item changes
+watch(() => props.editingItem, (newItem) => {
+  if (newItem) {
+    title.value = newItem.title || ''
+    description.value = newItem.description || ''
+    location.value = newItem.location || ''
+    latitude.value = newItem.latitude
+    longitude.value = newItem.longitude
+    date.value = newItem.date || ''
+    itemType.value = newItem.type || ''
+    contactInfo.value = newItem.contactInfo || ''
+    imageUrls.value = newItem.imageUrls || []
+    formKey.value++ // Reset ImageUpload with existing images
+  }
+})
 
 function handleLocationSelected(locationData) {
   location.value = locationData.address
@@ -90,6 +119,7 @@ function submitItem() {
     date: date.value,
     type: itemType.value,
     contactInfo: contactInfo.value,
+    imageUrls: imageUrls.value,
     status: 'OPEN'
   })
   
@@ -102,6 +132,9 @@ function submitItem() {
   date.value = ''
   itemType.value = ''
   contactInfo.value = ''
+  imageUrls.value = []
+  formKey.value++ // Force ImageUpload component to reset
+  emit('clear-edit') // Clear editing state in parent
 }
 </script>
 
