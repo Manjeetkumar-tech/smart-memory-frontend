@@ -8,6 +8,17 @@
     </div>
     <div class="dashboard-header">
       <h1 class="dashboard-title">🔍 Lost & Found Dashboard</h1>
+      
+      <button 
+        v-if="userStore.user" 
+        @click="isInboxOpen = true" 
+        class="inbox-btn"
+      >
+        📬 Inbox
+        <span v-if="unreadCount > 0" class="global-unread-badge">
+          {{ unreadCount }}
+        </span>
+      </button>
     </div>
 
     <!-- Input Form -->
@@ -108,6 +119,13 @@
             {{ item.claimedBy === userStore.user?.uid ? '✓ Claimed by you' : '✓ Claimed' }}
           </span>
           <button 
+            v-if="!isMyItem(item) && item.userId" 
+            @click="openMessageModal(item)" 
+            class="btn btn-message"
+          >
+            💬 Message
+          </button>
+          <button 
             v-if="isMyItem(item)" 
             @click="handleEdit(item)" 
             class="btn btn-edit"
@@ -134,14 +152,33 @@
       <img :src="selectedImage" alt="Full size image" class="modal-image" />
     </div>
   </div>
+
+  <!-- Messaging Modal -->
+  <MessagingModal
+    :is-open="isMessagingOpen"
+    :item="selectedItem"
+    :current-user-id="userStore.user?.uid"
+    @close="isMessagingOpen = false"
+  />
+
+  <!-- Inbox Drawer -->
+  <InboxDrawer
+    :is-open="isInboxOpen"
+    :current-user-id="userStore.user?.uid"
+    @close="isInboxOpen = false"
+    @open-chat="openMessageModal"
+  />
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import InputForm from '@/components/InputForm.vue'
 import MapDisplay from '@/components/MapDisplay.vue'
+import MessagingModal from '@/components/MessagingModal.vue'
+import InboxDrawer from '@/components/InboxDrawer.vue'
 import { fetchItems, createItem, deleteItem, claimItem } from '@/services/itemService'
+import { getUnreadMessages } from '@/services/messageService'
 import { useUserStore } from '@/stores/userStore'
 import { auth } from '@/firebase'
 import { signOut } from 'firebase/auth'
@@ -153,14 +190,45 @@ const filterType = ref(null)
 const showMyItemsOnly = ref(false)
 const selectedImage = ref(null)
 const editingItem = ref(null)
+const isMessagingOpen = ref(false)
+const isInboxOpen = ref(false)
+const selectedItem = ref(null)
+const unreadCount = ref(0)
 const userStore = useUserStore()
+let unreadPolling = null
 
 onMounted(() => {
   loadItems()
+  startUnreadPolling()
 })
+
+onUnmounted(() => {
+  if (unreadPolling) clearInterval(unreadPolling)
+})
+
+function startUnreadPolling() {
+  updateUnreadCount()
+  unreadPolling = setInterval(updateUnreadCount, 10000) // Check every 10s
+}
+
+async function updateUnreadCount() {
+  if (userStore.user?.uid) {
+    try {
+      const messages = await getUnreadMessages(userStore.user.uid)
+      unreadCount.value = messages.length
+    } catch (e) {
+      console.error('Error checking unread:', e)
+    }
+  }
+}
 
 function openImageModal(url) {
   selectedImage.value = url
+}
+
+function openMessageModal(item) {
+  selectedItem.value = item
+  isMessagingOpen.value = true
 }
 
 const filteredItems = computed(() => {
@@ -616,6 +684,15 @@ function logout() {
   background: var(--primary-600);
 }
 
+.btn-message {
+  background: hsl(200, 100%, 50%);
+  color: white;
+}
+
+.btn-message:hover {
+  background: hsl(200, 100%, 45%);
+}
+
 .claimed-badge {
   padding: 0.625rem 1.25rem;
   background: hsl(142, 76%, 95%);
@@ -633,6 +710,35 @@ function logout() {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+}
+
+.inbox-btn {
+  position: relative;
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.inbox-btn:hover {
+  background: #f5f5f5;
+  border-color: var(--primary-400);
+}
+
+.global-unread-badge {
+  background: var(--error);
+  color: white;
+  font-size: 0.75rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
 }
 
 .empty-state {
