@@ -159,6 +159,7 @@
     :item="selectedItem"
     :current-user-id="userStore.user?.uid"
     @close="isMessagingOpen = false"
+    @back="handleBackToInbox"
   />
 
   <!-- Inbox Drawer -->
@@ -229,6 +230,11 @@ function openImageModal(url) {
 function openMessageModal(item) {
   selectedItem.value = item
   isMessagingOpen.value = true
+}
+
+function handleBackToInbox() {
+  isMessagingOpen.value = false
+  isInboxOpen.value = true
 }
 
 const filteredItems = computed(() => {
