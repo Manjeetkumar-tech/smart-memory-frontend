@@ -19,7 +19,7 @@
           v-else
           v-for="conv in conversations" 
           :key="conv.itemId"
-          class="conversation-item"
+          :class="['conversation-item', { 'has-unread': conv.unreadCount > 0 }]"
           @click="openConversation(conv)"
         >
           <div class="conv-content">
@@ -27,6 +27,7 @@
               <span class="item-title">{{ conv.itemTitle || 'Unknown Item' }}</span>
               <span class="time">{{ formatTime(conv.lastMessage.timestamp) }}</span>
             </div>
+            <p class="contact-line">{{ conv.item?.contactInfo || 'Owner' }}</p>
             <p class="last-message">{{ conv.lastMessage.content }}</p>
           </div>
           <div v-if="conv.unreadCount > 0" class="unread-badge">
@@ -95,7 +96,8 @@ async function loadInbox() {
         groups[msg.itemId].lastMessage = msg
       }
       
-      if (!msg.read) {
+      // Only count messages WE received that are unread (not messages we sent)
+      if (!msg.read && msg.receiverId === props.currentUserId) {
         groups[msg.itemId].unreadCount++
       }
     })
@@ -210,6 +212,21 @@ function formatTime(timestamp) {
   background: #f9f9f9;
 }
 
+.conversation-item.has-unread {
+  background: linear-gradient(to right, #e3f2fd, #fff);
+  border-left: 3px solid var(--primary-500);
+}
+
+.conversation-item.has-unread .item-title {
+  font-weight: 700;
+  color: var(--primary-600);
+}
+
+.conversation-item.has-unread .last-message {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
 .conv-content {
   flex: 1;
   min-width: 0; /* For text truncation */
@@ -233,6 +250,13 @@ function formatTime(timestamp) {
   font-size: 0.75rem;
   color: var(--color-text-muted);
   margin-left: 0.5rem;
+}
+
+.contact-line {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.8rem;
+  color: var(--primary-500);
+  font-weight: 500;
 }
 
 .last-message {

@@ -2,7 +2,8 @@
   <div v-if="isOpen" class="message-modal-overlay" @click="close">
     <div class="message-modal" @click.stop>
       <div class="modal-header">
-        <h3>💬 Messages about "{{ item?.title }}"</h3>
+        <h3>💬 "{{ item?.title }}"</h3>
+        <p class="chat-with">Chat with: {{ item?.contactInfo || 'Owner' }}</p>
         <button @click="close" class="close-btn">✕</button>
       </div>
 
@@ -18,7 +19,12 @@
         >
           <div class="message-content">
             <p>{{ message.content }}</p>
-            <span class="message-time">{{ formatTime(message.timestamp) }}</span>
+            <span class="message-time">
+              {{ formatTime(message.timestamp) }}
+              <span v-if="message.senderId === currentUserId" class="read-receipt">
+                {{ message.read ? '✓✓' : '✓' }}
+              </span>
+            </span>
           </div>
         </div>
       </div>
@@ -186,15 +192,33 @@ onUnmounted(() => {
   background: var(--primary-500);
   color: white;
   border-bottom: none;
+  position: relative;
 }
 
 .modal-header h3 {
   color: white;
   font-size: 1.1rem;
+  margin: 0 0 0.25rem 0;
+}
+
+.chat-with {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.85rem;
+  margin: 0;
+  font-weight: 400;
 }
 
 .close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
   color: rgba(255, 255, 255, 0.8);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
 }
 
 .close-btn:hover {
@@ -244,6 +268,16 @@ onUnmounted(() => {
 .send-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.read-receipt {
+  margin-left: 0.25rem;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.message.sent .read-receipt {
+  color: #1976d2;
 }
 
 @keyframes fadeIn {
