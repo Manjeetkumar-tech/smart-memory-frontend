@@ -118,7 +118,7 @@
             {{ item.status }}
           </span>
         </div>
-        <h3 class="item-title">{{ item.title }}</h3>
+        <h3 class="item-title clickable" @click="openDetailModal(item)">{{ item.title }}</h3>
         <p class="item-description">{{ item.description }}</p>
         
         <!-- Map display if coordinates available -->
@@ -219,6 +219,16 @@
     @close="isInboxOpen = false"
     @open-chat="openMessageModal"
   />
+
+  <!-- Item Detail Modal -->
+  <ItemDetailModal
+    :is-open="isDetailModalOpen"
+    :item="selectedItem"
+    @close="isDetailModalOpen = false"
+    @message="openMessageModal"
+    @claim="handleClaim"
+    @view-match="openDetailModal"
+  />
 </template>
 
 <script setup>
@@ -228,6 +238,7 @@ import InputForm from '@/components/InputForm.vue'
 import MapDisplay from '@/components/MapDisplay.vue'
 import MessagingModal from '@/components/MessagingModal.vue'
 import InboxDrawer from '@/components/InboxDrawer.vue'
+import ItemDetailModal from '@/components/ItemDetailModal.vue'
 import { fetchItems, createItem, updateItem, deleteItem, claimItem } from '@/services/itemService'
 import { sendMessage, getUnreadMessages } from '@/services/messageService'
 import { useUserStore } from '@/stores/userStore'
@@ -240,6 +251,7 @@ const items = ref([])
 const selectedImage = ref(null)
 const isMessagingOpen = ref(false)
 const selectedItem = ref(null)
+const isDetailModalOpen = ref(false)
 const isInboxOpen = ref(false)
 const filterType = ref(null)
 const showMyItemsOnly = ref(false)
@@ -283,6 +295,11 @@ function openImageModal(url) {
 function openMessageModal(item) {
   selectedItem.value = item
   isMessagingOpen.value = true
+}
+
+function openDetailModal(item) {
+  selectedItem.value = item
+  isDetailModalOpen.value = true
 }
 
 function handleBackToInbox() {
@@ -798,7 +815,17 @@ function logout() {
 .item-badge.found {
   background: hsl(142, 76%, 95%);
   color: hsl(142, 76%, 36%);
-  border: 1px solid hsl(142, 76%, 85%);
+}
+
+.item-title.clickable {
+  cursor: pointer;
+  color: var(--primary-color);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.item-title.clickable:hover {
+  color: var(--primary-dark);
 }
 
 .category-badge {
