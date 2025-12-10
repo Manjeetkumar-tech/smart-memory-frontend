@@ -109,11 +109,12 @@
         </div>
         <div class="item-actions">
           <button 
-            v-if="!isMyItem(item) && !item.claimedBy && item.type === 'FOUND'" 
+            v-if="!isMyItem(item) && !item.claimedBy" 
             @click="handleClaim(item.id)" 
+            :disabled="claimingItemId === item.id"
             class="btn btn-claim"
           >
-            Claim Item
+            {{ claimingItemId === item.id ? '⏳ Claiming...' : 'Claim Item' }}
           </button>
           <span v-if="item.claimedBy" class="claimed-badge">
             {{ item.claimedBy === userStore.user?.uid ? '✓ Claimed by you' : '✓ Claimed' }}
@@ -179,7 +180,7 @@ import MapDisplay from '@/components/MapDisplay.vue'
 import MessagingModal from '@/components/MessagingModal.vue'
 import InboxDrawer from '@/components/InboxDrawer.vue'
 import { fetchItems, createItem, deleteItem, claimItem } from '@/services/itemService'
-import { getUnreadMessages } from '@/services/messageService'
+import { sendMessage, getUnreadMessages } from '@/services/messageService'
 import { useUserStore } from '@/stores/userStore'
 import { auth } from '@/firebase'
 import { signOut } from 'firebase/auth'
@@ -195,6 +196,7 @@ const isMessagingOpen = ref(false)
 const isInboxOpen = ref(false)
 const selectedItem = ref(null)
 const unreadCount = ref(0)
+const claimingItemId = ref(null)
 const userStore = useUserStore()
 let unreadPolling = null
 
@@ -300,28 +302,42 @@ async function handleClaim(itemId) {
     return
   }
   
-  // Fraud prevention: Ask verification question
-  const verification = prompt('To verify this is your item, please provide a brief description or unique detail about it:')
-  
-  if (!verification || verification.trim().length < 5) {
-    alert('Please provide a detailed verification (at least 5 characters)')
-    return
-  }
-  
-  if (!confirm('After claiming, the item owner will be notified. Confirm claim?')) {
-    return
-  }
+  claimingItemId.value = itemId
   
   try {
+    // 1. Claim the item
     const updated = await claimItem(itemId, userStore.user.uid)
+    
+    // 2. Send automatic message to owner
+    try {
+      const itemType = updated.type === 'LOST' ? 'lost' : 'found'
+      const messageContent = `Hi! I've claimed your ${itemType} item "${updated.title}". I believe this belongs to me. Let's discuss to verify!`
+      
+      await sendMessage(
+        itemId,
+        userStore.user.uid,  // senderId (claimer)
+        updated.userId,      // receiverId (item owner)
+        messageContent
+      )
+    } catch (messageError) {
+      console.error('Failed to send automatic message:', messageError)
+      // Continue even if message fails - user can message manually
+    }
+    
+    // 3. Update UI
     const index = items.value.findIndex((item) => item.id === itemId)
     if (index !== -1) {
       items.value[index] = updated
     }
-    alert('Item claimed! The finder has been notified.')
+    await loadItems()
+    
+    // 4. Success - UI already updated with claimed badge
+    console.log('✅ Item claimed successfully! Message sent to owner.')
   } catch (error) {
     console.error('Error claiming item:', error)
-    alert('Failed to claim item. Please try again.')
+    alert('❌ Failed to claim item. Please try again.')
+  } finally {
+    claimingItemId.value = null
   }
 }
 
