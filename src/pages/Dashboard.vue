@@ -79,12 +79,40 @@
       </button>
     </div>
 
+    <!-- Category Filter -->
+    <div class="category-filter">
+      <button @click="categoryFilter = null" :class="['cat-btn', { active: !categoryFilter }]">
+        All Categories
+      </button>
+      <button @click="categoryFilter = 'ELECTRONICS'" :class="['cat-btn', { active: categoryFilter === 'ELECTRONICS' }]">
+        📱 Electronics
+      </button>
+      <button @click="categoryFilter = 'DOCUMENTS'" :class="['cat-btn', { active: categoryFilter === 'DOCUMENTS' }]">
+        📄 Documents
+      </button>
+      <button @click="categoryFilter = 'ACCESSORIES'" :class="['cat-btn', { active: categoryFilter === 'ACCESSORIES' }]">
+        👜 Accessories
+      </button>
+      <button @click="categoryFilter = 'CLOTHING'" :class="['cat-btn', { active: categoryFilter === 'CLOTHING' }]">
+        👕 Clothing
+      </button>
+      <button @click="categoryFilter = 'PETS'" :class="['cat-btn', { active: categoryFilter === 'PETS' }]">
+        🐾 Pets
+      </button>
+      <button @click="categoryFilter = 'OTHER'" :class="['cat-btn', { active: categoryFilter === 'OTHER' }]">
+        📦 Other
+      </button>
+    </div>
+
     <!-- Items List -->
     <div v-if="filteredItems.length" class="items-container">
       <div v-for="item in filteredItems" :key="item.id" class="item-card">
         <div class="item-header">
           <span :class="['item-badge', item.type.toLowerCase()]">
             {{ item.type === 'LOST' ? '🔴 LOST' : '🟢 FOUND' }}
+          </span>
+          <span class="category-badge">
+            {{ getCategoryIcon(item.category) }} {{ formatCategory(item.category) }}
           </span>
           <span :class="['status-badge', item.status.toLowerCase()]">
             {{ item.status }}
@@ -200,7 +228,7 @@ import InputForm from '@/components/InputForm.vue'
 import MapDisplay from '@/components/MapDisplay.vue'
 import MessagingModal from '@/components/MessagingModal.vue'
 import InboxDrawer from '@/components/InboxDrawer.vue'
-import { fetchItems, createItem, deleteItem, claimItem } from '@/services/itemService'
+import { fetchItems, createItem, updateItem, deleteItem, claimItem } from '@/services/itemService'
 import { sendMessage, getUnreadMessages } from '@/services/messageService'
 import { useUserStore } from '@/stores/userStore'
 import { auth } from '@/firebase'
@@ -219,6 +247,7 @@ const editingItem = ref(null)
 const unreadCount = ref(0)
 const claimingItemId = ref(null)
 const searchQuery = ref('') // Search state
+const categoryFilter = ref(null) // Category filter state
 const userStore = useUserStore()
 let unreadPolling = null
 
@@ -261,6 +290,23 @@ function handleBackToInbox() {
   isInboxOpen.value = true
 }
 
+function getCategoryIcon(category) {
+  const icons = {
+    ELECTRONICS: '📱',
+    DOCUMENTS: '📄',
+    ACCESSORIES: '👜',
+    CLOTHING: '👕',
+    PETS: '🐾',
+    OTHER: '📦'
+  }
+  return icons[category] || '📦'
+}
+
+function formatCategory(category) {
+  if (!category) return 'Other'
+  return category.charAt(0) + category.slice(1).toLowerCase()
+}
+
 const filteredItems = computed(() => {
   let filtered = items.value
   
@@ -272,6 +318,11 @@ const filteredItems = computed(() => {
   // Filter by user if toggle is on
   if (showMyItemsOnly.value && userStore.user) {
     filtered = filtered.filter(item => item.userId === userStore.user.uid)
+  }
+  
+  // Filter by category
+  if (categoryFilter.value) {
+    filtered = filtered.filter(item => item.category === categoryFilter.value)
   }
   
   // Filter by search query
@@ -378,33 +429,33 @@ function isMyItem(item) {
 }
 
 function handleEdit(item) {
+  console.log('Editing item:', item)
   // Scroll to top to show form
   window.scrollTo({ top: 0, behavior: 'smooth' })
   
   // Emit edit event to InputForm
-  // We'll need to add a ref to InputForm and call a method on it
   editingItem.value = item
 }
 
 async function addItem(itemData) {
   if (!userStore.user) {
-    alert('Please login to add items.')
+    console.warn('User not logged in, cannot add item')
     return
   }
   
   try {
     if (editingItem.value) {
       // Update existing item
-      const response = await fetch(`http://localhost:8080/api/items/${editingItem.value.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...itemData,
-          userId: userStore.user.uid
-        })
+      const editingId = editingItem.value.id // Capture ID before await
+      console.log('Updating item:', editingId, itemData)
+      
+      const updatedItem = await updateItem(editingId, {
+        ...itemData,
+        userId: userStore.user.uid
       })
-      const updatedItem = await response.json()
-      const index = items.value.findIndex(item => item.id === editingItem.value.id)
+      console.log('Item updated successfully:', updatedItem)
+      
+      const index = items.value.findIndex(item => item.id === editingId)
       if (index !== -1) {
         items.value[index] = updatedItem
       }
@@ -419,7 +470,6 @@ async function addItem(itemData) {
     }
   } catch (error) {
     console.error('Error saving item:', error)
-    alert('Failed to save item')
   }
 }
 
@@ -634,6 +684,39 @@ function logout() {
   color: var(--text-primary);
 }
 
+/* ===== CATEGORY FILTER ===== */
+.category-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  justify-content: center;
+}
+
+.cat-btn {
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.cat-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: var(--primary-200);
+}
+
+.cat-btn.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-sm);
+}
+
 /* ===== FILTER TABS ===== */
 
 .filter-tabs {
@@ -714,7 +797,21 @@ function logout() {
 
 .item-badge.found {
   background: hsl(142, 76%, 95%);
-  color: var(--success);
+  color: hsl(142, 76%, 36%);
+  border: 1px solid hsl(142, 76%, 85%);
+}
+
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid var(--border-color);
 }
 
 .status-badge {

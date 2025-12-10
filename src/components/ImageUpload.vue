@@ -48,7 +48,7 @@
 <script setup>
 import { ref } from 'vue'
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'image-added'])
 const props = defineProps({
   modelValue: {
     type: Array,
@@ -98,6 +98,7 @@ async function handleFileSelect(event) {
 }
 
 async function uploadImage(file) {
+  emit('image-added', file)
   // Add to preview immediately
   const imageObj = {
     url: URL.createObjectURL(file),

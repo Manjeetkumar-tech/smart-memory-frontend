@@ -62,7 +62,15 @@
     />
 
     <!-- Image Upload -->
-    <ImageUpload v-model="imageUrls" :key="formKey" />
+    <ImageUpload v-model="imageUrls" :key="formKey" @image-added="handleImageAdded" />
+
+    <div v-if="lastUploadedFile" class="ai-actions">
+      <button type="button" @click="analyzeImage" class="ai-btn" :disabled="isAnalyzing">
+        <span v-if="isAnalyzing">🤖 Analyzing...</span>
+        <span v-else>✨ Auto-Fill with AI</span>
+      </button>
+      <p class="ai-hint">Gemini AI will analyze the image to fill details.</p>
+    </div>
 
     <button type="submit" class="submit-btn">
       <span class="btn-icon">{{ editingItem ? '💾' : '📤' }}</span>
@@ -91,6 +99,7 @@ const latitude = ref(null)
 const longitude = ref(null)
 const date = ref('')
 const itemType = ref('')
+const category = ref('')
 const contactInfo = ref('')
 const imageUrls = ref([])
 const formKey = ref(0) // Key to force ImageUpload reset
@@ -105,11 +114,58 @@ watch(() => props.editingItem, (newItem) => {
     longitude.value = newItem.longitude
     date.value = newItem.date || ''
     itemType.value = newItem.type || ''
+    category.value = newItem.category || 'OTHER' // Default to OTHER for legacy items
     contactInfo.value = newItem.contactInfo || ''
     imageUrls.value = newItem.imageUrls || []
     formKey.value++ // Reset ImageUpload with existing images
   }
 })
+
+const lastUploadedFile = ref(null)
+const isAnalyzing = ref(false)
+
+function handleImageAdded(file) {
+  lastUploadedFile.value = file
+}
+
+async function analyzeImage() {
+  if (!lastUploadedFile.value) return
+  
+  isAnalyzing.value = true
+  try {
+    const formData = new FormData()
+    formData.append('image', lastUploadedFile.value)
+    
+    const response = await fetch('http://localhost:8080/api/ai/analyze', {
+      method: 'POST',
+      body: formData
+    })
+    
+    if (!response.ok) throw new Error('AI Analysis failed')
+    
+    const data = await response.json()
+    
+    // Auto-fill fields
+    if (data.title) title.value = data.title
+    if (data.description) description.value = data.description
+    if (data.category) {
+      // Map AI category to our categories
+      const validCategories = ['ELECTRONICS', 'DOCUMENTS', 'ACCESSORIES', 'CLOTHING', 'PETS', 'OTHER']
+      const aiCat = data.category.toUpperCase()
+      if (validCategories.includes(aiCat)) {
+        category.value = aiCat
+      } else {
+        category.value = 'OTHER'
+      }
+    }
+    
+  } catch (error) {
+    console.error('AI Error:', error)
+    alert('Failed to analyze image. Please try again.')
+  } finally {
+    isAnalyzing.value = false
+  }
+}
 
 function handleLocationSelected(locationData) {
   location.value = locationData.address
@@ -118,7 +174,7 @@ function handleLocationSelected(locationData) {
 }
 
 function submitItem() {
-  if (!title.value.trim() || !description.value.trim() || !itemType.value) return
+  if (!title.value.trim() || !description.value.trim() || !itemType.value || !category.value) return
   
   emit('submit-item', {
     title: title.value,
@@ -128,6 +184,7 @@ function submitItem() {
     longitude: longitude.value,
     date: date.value,
     type: itemType.value,
+    category: category.value,
     contactInfo: contactInfo.value,
     imageUrls: imageUrls.value,
     status: 'OPEN'
@@ -141,6 +198,7 @@ function submitItem() {
   longitude.value = null
   date.value = ''
   itemType.value = ''
+  category.value = ''
   contactInfo.value = ''
   imageUrls.value = []
   formKey.value++ // Force ImageUpload component to reset
@@ -288,5 +346,41 @@ function submitItem() {
   .form-title {
     font-size: 1.1rem;
   }
+}
+
+.ai-actions {
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.ai-btn {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-md);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ai-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.ai-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.ai-hint {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-top: 0.5rem;
 }
 </style>

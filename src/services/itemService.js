@@ -15,6 +15,15 @@ export async function createItem(itemData) {
   return res.json()
 }
 
+export async function updateItem(id, itemData) {
+  const res = await fetch(`${BASE_URL}/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(itemData),
+  })
+  return res.json()
+}
+
 export async function deleteItem(id) {
   return fetch(`${BASE_URL}/${id}`, { method: 'DELETE' })
 }
