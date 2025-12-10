@@ -10,6 +10,16 @@
         <option value="LOST">Lost Item</option>
         <option value="FOUND">Found Item</option>
       </select>
+      
+      <select v-model="category" class="form-select" required>
+        <option value="">Select Category</option>
+        <option value="ELECTRONICS">📱 Electronics</option>
+        <option value="DOCUMENTS">📄 Documents</option>
+        <option value="ACCESSORIES">👜 Accessories</option>
+        <option value="CLOTHING">👕 Clothing</option>
+        <option value="PETS">🐾 Pets</option>
+        <option value="OTHER">📦 Other</option>
+      </select>
     </div>
 
     <input

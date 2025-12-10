@@ -36,6 +36,27 @@
       </label>
     </div>
 
+    <!-- Search Bar -->
+    <div class="search-container">
+      <div class="search-wrapper">
+        <span class="search-icon">🔍</span>
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Search items by title or description..."
+          class="search-input"
+        />
+        <button
+          v-if="searchQuery"
+          @click="searchQuery = ''"
+          class="search-clear"
+          title="Clear search"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+
     <!-- Filter Tabs -->
     <div class="filter-tabs">
       <button 
@@ -188,15 +209,16 @@ import { signOut } from 'firebase/auth'
 const router = useRouter()
 
 const items = ref([])
+const selectedImage = ref(null)
+const isMessagingOpen = ref(false)
+const selectedItem = ref(null)
+const isInboxOpen = ref(false)
 const filterType = ref(null)
 const showMyItemsOnly = ref(false)
-const selectedImage = ref(null)
 const editingItem = ref(null)
-const isMessagingOpen = ref(false)
-const isInboxOpen = ref(false)
-const selectedItem = ref(null)
 const unreadCount = ref(0)
 const claimingItemId = ref(null)
+const searchQuery = ref('') // Search state
 const userStore = useUserStore()
 let unreadPolling = null
 
@@ -250,6 +272,16 @@ const filteredItems = computed(() => {
   // Filter by user if toggle is on
   if (showMyItemsOnly.value && userStore.user) {
     filtered = filtered.filter(item => item.userId === userStore.user.uid)
+  }
+  
+  // Filter by search query
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(item => {
+      const titleMatch = item.title?.toLowerCase().includes(query)
+      const descMatch = item.description?.toLowerCase().includes(query)
+      return titleMatch || descMatch
+    })
   }
   
   return filtered
@@ -409,10 +441,58 @@ function logout() {
 </script>
 
 <style scoped>
+/* ===== CSS VARIABLES - Modern Color System ===== */
+:root {
+  /* Primary Colors */
+  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --primary-color: #667eea;
+  --primary-dark: #5568d3;
+  --primary-light: #8b9dff;
+  
+  /* Accent Colors */
+  --accent-success: #10b981;
+  --accent-success-dark: #059669;
+  --accent-warning: #f59e0b;
+  --accent-danger: #ef4444;
+  --accent-info: #3b82f6;
+  
+  /* Neutral Colors */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --border-color: #e2e8f0;
+  --border-light: #f1f5f9;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
+  /* Transitions */
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+}
+
+/* ===== BASE STYLES ===== */
 .dashboard-container {
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 2rem 1.5rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-primary);
+  min-height: 100vh;
 }
 
 .user-info {
@@ -496,6 +576,66 @@ function logout() {
   color: var(--color-heading);
 }
 
+/* ===== SEARCH BAR ===== */
+.search-container {
+  margin: 1.5rem 0;
+}
+
+.search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 0.75rem 1rem;
+  transition: all var(--transition-base);
+}
+
+.search-wrapper:focus-within {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.search-icon {
+  font-size: 1.25rem;
+  margin-right: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  font-family: inherit;
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.search-clear {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  margin-left: 0.5rem;
+}
+
+.search-clear:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* ===== FILTER TABS ===== */
+
 .filter-tabs {
   display: flex;
   gap: 1rem;
@@ -535,11 +675,10 @@ function logout() {
 }
 
 .item-card {
-  background: var(--gradient-card);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 24px;
   box-shadow: var(--shadow-md);
   transition: all var(--transition-base);
   display: flex;
@@ -548,9 +687,9 @@ function logout() {
 }
 
 .item-card:hover {
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-xl);
   transform: translateY(-4px);
-  border-color: var(--primary-200);
+  border-color: var(--primary-light);
 }
 
 .item-header {
@@ -689,42 +828,54 @@ function logout() {
 }
 
 .btn-claim {
-  background: var(--success);
-  color: white;
+  background: var(--primary-gradient);
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.25);
 }
 
 .btn-claim:hover {
-  background: hsl(142, 76%, 40%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+}
+
+.btn-claim:active {
+  transform: translateY(0);
 }
 
 .btn-edit {
-  background: var(--primary-500);
-  color: white;
+  background: var(--bg-secondary);
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
 }
 
 .btn-edit:hover {
-  background: var(--primary-600);
+  background: var(--primary-color);
+  color: white;
+  transform: translateY(-2px);
 }
 
 .btn-message {
-  background: hsl(200, 100%, 50%);
-  color: white;
+  background: var(--accent-info);
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
 }
 
 .btn-message:hover {
-  background: hsl(200, 100%, 45%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
 }
 
 .claimed-badge {
-  padding: 0.625rem 1.25rem;
-  background: hsl(142, 76%, 95%);
-  color: hsl(142, 76%, 36%);
-  border-radius: var(--radius-full);
-  font-size: 0.85rem;
-  font-weight: 600;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 6px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, var(--accent-success) 0%, var(--accent-success-dark) 100%);
+  color: var(--text-primary);
+  border-radius: var(--radius-full);
+  font-weight: 500;
+  font-size: 0.875rem;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
 }
 
 .dashboard-header {
