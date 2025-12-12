@@ -222,12 +222,35 @@
 
   <!-- Item Detail Modal -->
   <ItemDetailModal
+    v-if="isDetailModalOpen && selectedItem"
     :is-open="isDetailModalOpen"
     :item="selectedItem"
-    @close="isDetailModalOpen = false"
+    :is-my-item="selectedItem.userId === userStore.user?.uid"
+    @close="isDetailModalOpen = false; selectedItem = null"
     @message="openMessageModal"
     @claim="handleClaim"
+    @resolve="handleResolve"
+    @delete="handleDelete"
     @view-match="openDetailModal"
+  />
+  
+  <ConfirmationModal
+    :is-open="showConfirmModal"
+    :title="confirmModalConfig.title"
+    :message="confirmModalConfig.message"
+    :confirm-text="confirmModalConfig.confirmText"
+    :type="confirmModalConfig.type"
+    @close="showConfirmModal = false"
+    @confirm="executeConfirm"
+  />
+  <ConfirmationModal
+    :is-open="showConfirmModal"
+    :title="confirmModalConfig.title"
+    :message="confirmModalConfig.message"
+    :confirm-text="confirmModalConfig.confirmText"
+    :type="confirmModalConfig.type"
+    @close="showConfirmModal = false"
+    @confirm="executeConfirm"
   />
 </template>
 
@@ -239,7 +262,8 @@ import MapDisplay from '@/components/MapDisplay.vue'
 import MessagingModal from '@/components/MessagingModal.vue'
 import InboxDrawer from '@/components/InboxDrawer.vue'
 import ItemDetailModal from '@/components/ItemDetailModal.vue'
-import { fetchItems, createItem, updateItem, deleteItem, claimItem } from '@/services/itemService'
+import ConfirmationModal from '@/components/ConfirmationModal.vue'
+import { fetchItems, createItem, updateItem, deleteItem as apiDeleteItem, resolveItem, claimItem } from '../services/itemService'
 import { sendMessage, getUnreadMessages } from '@/services/messageService'
 import { useUserStore } from '@/stores/userStore'
 import { auth } from '@/firebase'
@@ -262,6 +286,16 @@ const searchQuery = ref('') // Search state
 const categoryFilter = ref(null) // Category filter state
 const userStore = useUserStore()
 let unreadPolling = null
+
+// Confirmation Modal State
+const showConfirmModal = ref(false)
+const confirmModalConfig = ref({
+  title: '',
+  message: '',
+  confirmText: '',
+  type: 'primary',
+  action: null
+})
 
 onMounted(() => {
   loadItems()
@@ -337,8 +371,11 @@ const filteredItems = computed(() => {
     filtered = filtered.filter(item => item.userId === userStore.user.uid)
   }
   
+  // Filter out RESOLVED items (Archived)
+  filtered = filtered.filter(item => item.status !== 'RESOLVED')
+
   // Filter by category
-  if (categoryFilter.value) {
+  if (categoryFilter.value && categoryFilter.value !== 'ALL') {
     filtered = filtered.filter(item => item.category === categoryFilter.value)
   }
   
@@ -391,20 +428,35 @@ async function loadItems(search = '') {
 }
 
 async function handleDelete(id) {
-  if (!confirm('Are you sure you want to delete this item?')) return
-  
+  confirmModalConfig.value = {
+    title: 'Delete Item',
+    message: 'Are you sure you want to delete this item? This action cannot be undone.',
+    confirmText: 'Delete',
+    type: 'danger',
+    action: () => performDelete(id)
+  }
+  showConfirmModal.value = true
+}
+
+async function performDelete(id) {
   try {
-    await deleteItem(id)
+    console.log('Calling deleteItem API for id:', id);
+    await apiDeleteItem(id)
+    console.log('API call successful for delete');
     items.value = items.value.filter((item) => item.id !== id)
+    
+    // Close modal if open
+    isDetailModalOpen.value = false
+    selectedItem.value = null
+    showConfirmModal.value = false
   } catch (error) {
     console.error('Error deleting item:', error)
-    alert('Failed to delete item')
   }
 }
 
 async function handleClaim(itemId) {
   if (!userStore.user) {
-    alert('Please login to claim items.')
+    console.warn('Please login to claim items.')
     return
   }
   
@@ -436,14 +488,48 @@ async function handleClaim(itemId) {
       items.value[index] = updated
     }
     await loadItems()
+    selectedItem.value = null
     
     // 4. Success - UI already updated with claimed badge
     console.log('✅ Item claimed successfully! Message sent to owner.')
   } catch (error) {
     console.error('Error claiming item:', error)
-    alert('❌ Failed to claim item. Please try again.')
+    // Removed alert
   } finally {
     claimingItemId.value = null
+  }
+}
+
+async function handleResolve(itemId) {
+  confirmModalConfig.value = {
+    title: 'Confirm Handover',
+    message: 'Have you handed over this item? It will be marked as resolved and archived.',
+    confirmText: 'Confirm Handover',
+    type: 'success',
+    action: () => performResolve(itemId)
+  }
+  showConfirmModal.value = true
+}
+
+async function performResolve(itemId) {
+  try {
+    console.log('Calling resolveItem API for id:', itemId);
+    await resolveItem(itemId);
+    console.log('API call successful for resolve');
+    
+    // Refresh items
+    await loadItems()
+    selectedItem.value = null
+    isDetailModalOpen.value = false; // Close the modal
+    showConfirmModal.value = false
+  } catch (error) {
+    console.error('Error resolving item:', error)
+  }
+}
+
+function executeConfirm() {
+  if (confirmModalConfig.value.action) {
+    confirmModalConfig.value.action()
   }
 }
 

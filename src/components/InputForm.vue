@@ -186,8 +186,9 @@ function submitItem() {
     type: itemType.value,
     category: category.value,
     contactInfo: contactInfo.value,
+    contactInfo: contactInfo.value,
     imageUrls: imageUrls.value,
-    status: 'OPEN'
+    status: props.editingItem ? props.editingItem.status : 'OPEN'
   })
   
   // Reset form

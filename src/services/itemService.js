@@ -27,7 +27,16 @@ export async function updateItem(id, itemData) {
 }
 
 export async function deleteItem(id) {
-  return fetch(`${BASE_URL}/${id}`, { method: 'DELETE' })
+  await fetch(`${BASE_URL}/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function resolveItem(id) {
+  const res = await fetch(`${BASE_URL}/${id}/resolve`, {
+    method: 'PUT',
+  })
+  return res.json()
 }
 
 export async function getItem(id) {

@@ -76,6 +76,9 @@
         <button v-if="isMyItem && item.status === 'CLAIMED'" @click="$emit('resolve', item.id)" class="btn btn-resolve">
           ✅ Confirm Handover
         </button>
+        <button v-if="isMyItem" @click="$emit('delete', item.id)" class="btn btn-delete">
+          🗑️ Delete
+        </button>
         
         <!-- Status Badges -->
         <div v-if="item.status === 'CLAIMED' && !isMyItem" class="status-badge pending">
@@ -90,7 +93,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useUserStore } from '@/stores/userStore'
 
 const props = defineProps({
@@ -98,12 +101,18 @@ const props = defineProps({
   item: Object
 })
 
-const emit = defineEmits(['close', 'message', 'claim', 'view-match'])
+const emit = defineEmits(['close', 'message', 'claim', 'view-match', 'resolve', 'delete'])
 const userStore = useUserStore()
 const matches = ref([])
 const loadingMatches = ref(false)
 
-const isMyItem = (props.item?.userId === userStore.user?.uid)
+const isMyItem = computed(() => {
+  const itemUserId = props.item?.userId
+  const currentUserId = userStore.user?.uid
+  const match = itemUserId === currentUserId
+  console.log('ItemDetailModal: isMyItem check:', { itemUserId, currentUserId, match, status: props.item?.status })
+  return match
+})
 
 watch(() => props.item, async (newItem) => {
   if (newItem && props.isOpen) {
@@ -324,4 +333,6 @@ function formatCategory(category) {
 
 .btn-message { background: #3b82f6; color: white; }
 .btn-claim { background: #10b981; color: white; }
+.btn-resolve { background: #8b5cf6; color: white; }
+.btn-delete { background: #ef4444; color: white; }
 </style>
