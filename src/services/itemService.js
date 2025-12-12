@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:8080/api/items'
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/items'
 
 export async function fetchItems(search = '') {
   const url = search
