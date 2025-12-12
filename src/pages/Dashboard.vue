@@ -342,7 +342,8 @@ const filteredItems = computed(() => {
     filtered = filtered.filter(item => item.category === categoryFilter.value)
   }
   
-  // Filter by search query
+  // Filter by search query - REMOVED (Handled by backend now)
+  /*
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase()
     filtered = filtered.filter(item => {
@@ -351,6 +352,7 @@ const filteredItems = computed(() => {
       return titleMatch || descMatch
     })
   }
+  */
   
   return filtered
 })
@@ -375,9 +377,13 @@ watch(
   { immediate: true },
 )
 
-async function loadItems() {
+watch(searchQuery, (newQuery) => {
+  loadItems(newQuery)
+})
+
+async function loadItems(search = '') {
   try {
-    const data = await fetchItems()
+    const data = await fetchItems(search)
     items.value = data.sort((a, b) => new Date(b.date) - new Date(a.date))
   } catch (error) {
     console.error('Error loading items:', error)

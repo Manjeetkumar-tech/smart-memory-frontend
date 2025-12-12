@@ -1,7 +1,9 @@
 const BASE_URL = 'http://localhost:8080/api/items'
 
-export async function fetchItems(type = null) {
-  const url = type ? `${BASE_URL}?type=${type}` : BASE_URL
+export async function fetchItems(search = '') {
+  const url = search
+    ? `${BASE_URL}?search=${encodeURIComponent(search)}`
+    : BASE_URL
   const res = await fetch(url)
   return res.json()
 }

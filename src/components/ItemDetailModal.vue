@@ -68,9 +68,22 @@
         <button v-if="!isMyItem" @click="$emit('message', item)" class="btn btn-message">
           💬 Message Owner
         </button>
-        <button v-if="!isMyItem" @click="$emit('claim', item)" class="btn btn-claim">
+        <button v-if="!isMyItem && item.status === 'OPEN'" @click="$emit('claim', item.id)" class="btn btn-claim">
           ✋ Claim Item
         </button>
+        
+        <!-- Owner Actions -->
+        <button v-if="isMyItem && item.status === 'CLAIMED'" @click="$emit('resolve', item.id)" class="btn btn-resolve">
+          ✅ Confirm Handover
+        </button>
+        
+        <!-- Status Badges -->
+        <div v-if="item.status === 'CLAIMED' && !isMyItem" class="status-badge pending">
+          ⏳ Waiting for Owner Confirmation
+        </div>
+        <div v-if="item.status === 'RESOLVED'" class="status-badge resolved">
+          🎉 Item Returned!
+        </div>
       </div>
     </div>
   </div>
