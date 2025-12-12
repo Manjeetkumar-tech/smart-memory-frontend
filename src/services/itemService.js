@@ -50,3 +50,17 @@ export async function claimItem(itemId, userId) {
   })
   return res.json()
 }
+
+export async function unclaimItem(id) {
+  const res = await fetch(`${BASE_URL}/${id}/unclaim`, {
+    method: 'PUT',
+  })
+  return res.json()
+}
+
+export async function unresolveItem(id) {
+  const res = await fetch(`${BASE_URL}/${id}/unresolve`, {
+    method: 'PUT',
+  })
+  return res.json()
+}

@@ -80,6 +80,14 @@
           🗑️ Delete
         </button>
         
+        <!-- Revert Actions -->
+        <button v-if="item.status === 'CLAIMED' && item.claimedBy === userStore.user?.uid" @click="$emit('unclaim', item.id)" class="btn btn-warning">
+          🚫 Cancel Claim
+        </button>
+        <button v-if="isMyItem && item.status === 'RESOLVED'" @click="$emit('unresolve', item.id)" class="btn btn-warning">
+          ↩️ Undo Handover
+        </button>
+        
         <!-- Status Badges -->
         <div v-if="item.status === 'CLAIMED' && !isMyItem" class="status-badge pending">
           ⏳ Waiting for Owner Confirmation
@@ -101,7 +109,7 @@ const props = defineProps({
   item: Object
 })
 
-const emit = defineEmits(['close', 'message', 'claim', 'view-match', 'resolve', 'delete'])
+const emit = defineEmits(['close', 'message', 'claim', 'view-match', 'resolve', 'delete', 'unclaim', 'unresolve'])
 const userStore = useUserStore()
 const matches = ref([])
 const loadingMatches = ref(false)
@@ -335,4 +343,5 @@ function formatCategory(category) {
 .btn-claim { background: #10b981; color: white; }
 .btn-resolve { background: #8b5cf6; color: white; }
 .btn-delete { background: #ef4444; color: white; }
+.btn-warning { background: #f59e0b; color: white; }
 </style>

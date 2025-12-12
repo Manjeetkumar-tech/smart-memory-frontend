@@ -77,6 +77,12 @@
       >
         Found Items
       </button>
+      <button 
+        @click="filterType = 'RESOLVED'" 
+        :class="['tab', { active: filterType === 'RESOLVED' }]"
+      >
+        Resolved
+      </button>
     </div>
 
     <!-- Category Filter -->
@@ -232,17 +238,10 @@
     @resolve="handleResolve"
     @delete="handleDelete"
     @view-match="openDetailModal"
+    @unclaim="handleUnclaim"
+    @unresolve="handleUnresolve"
   />
   
-  <ConfirmationModal
-    :is-open="showConfirmModal"
-    :title="confirmModalConfig.title"
-    :message="confirmModalConfig.message"
-    :confirm-text="confirmModalConfig.confirmText"
-    :type="confirmModalConfig.type"
-    @close="showConfirmModal = false"
-    @confirm="executeConfirm"
-  />
   <ConfirmationModal
     :is-open="showConfirmModal"
     :title="confirmModalConfig.title"
@@ -263,7 +262,7 @@ import MessagingModal from '@/components/MessagingModal.vue'
 import InboxDrawer from '@/components/InboxDrawer.vue'
 import ItemDetailModal from '@/components/ItemDetailModal.vue'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
-import { fetchItems, createItem, updateItem, deleteItem as apiDeleteItem, resolveItem, claimItem } from '../services/itemService'
+import { fetchItems, createItem, updateItem, deleteItem as apiDeleteItem, resolveItem, claimItem, unclaimItem, unresolveItem } from '../services/itemService'
 import { sendMessage, getUnreadMessages } from '@/services/messageService'
 import { useUserStore } from '@/stores/userStore'
 import { auth } from '@/firebase'
@@ -371,8 +370,12 @@ const filteredItems = computed(() => {
     filtered = filtered.filter(item => item.userId === userStore.user.uid)
   }
   
-  // Filter out RESOLVED items (Archived)
-  filtered = filtered.filter(item => item.status !== 'RESOLVED')
+  // Filter out RESOLVED items (Archived) unless viewing Resolved tab
+  if (filterType.value !== 'RESOLVED') {
+    filtered = filtered.filter(item => item.status !== 'RESOLVED')
+  } else {
+    filtered = filtered.filter(item => item.status === 'RESOLVED')
+  }
 
   // Filter by category
   if (categoryFilter.value && categoryFilter.value !== 'ALL') {
@@ -524,6 +527,52 @@ async function performResolve(itemId) {
     showConfirmModal.value = false
   } catch (error) {
     console.error('Error resolving item:', error)
+  }
+}
+
+async function handleUnclaim(itemId) {
+  confirmModalConfig.value = {
+    title: 'Cancel Claim',
+    message: 'Are you sure you want to cancel your claim? The item will be marked as Open again.',
+    confirmText: 'Cancel Claim',
+    type: 'danger',
+    action: () => performUnclaim(itemId)
+  }
+  showConfirmModal.value = true
+}
+
+async function performUnclaim(itemId) {
+  try {
+    await unclaimItem(itemId)
+    await loadItems()
+    selectedItem.value = null
+    isDetailModalOpen.value = false
+    showConfirmModal.value = false
+  } catch (error) {
+    console.error('Error unclaiming item:', error)
+  }
+}
+
+async function handleUnresolve(itemId) {
+  confirmModalConfig.value = {
+    title: 'Undo Handover',
+    message: 'This will move the item back to "Claimed" status. Are you sure?',
+    confirmText: 'Undo Handover',
+    type: 'primary',
+    action: () => performUnresolve(itemId)
+  }
+  showConfirmModal.value = true
+}
+
+async function performUnresolve(itemId) {
+  try {
+    await unresolveItem(itemId)
+    await loadItems()
+    selectedItem.value = null
+    isDetailModalOpen.value = false
+    showConfirmModal.value = false
+  } catch (error) {
+    console.error('Error unresolving item:', error)
   }
 }
 
