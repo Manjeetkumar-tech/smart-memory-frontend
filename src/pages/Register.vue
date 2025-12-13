@@ -3,7 +3,7 @@
     <div class="auth-container">
       <div class="auth-card">
         <h1 class="auth-title">Create Account 🚀</h1>
-        <p class="auth-subtitle">Join Smart Memory to start tracking your memories</p>
+        <p class="auth-subtitle">Join Lost-and-Found to start tracking your items</p>
 
         <form @submit.prevent="handleRegister" class="auth-form">
           <div class="form-group">

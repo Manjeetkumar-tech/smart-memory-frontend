@@ -137,7 +137,8 @@ watch(() => props.isOpen, async (isOpen) => {
 async function fetchMatches(itemId) {
   loadingMatches.value = true
   try {
-    const response = await fetch(`http://localhost:8080/api/items/${itemId}/matches`)
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/items'
+    const response = await fetch(`${baseUrl}/${itemId}/matches`)
     if (response.ok) {
       matches.value = await response.json()
     }

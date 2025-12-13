@@ -3,7 +3,7 @@
     <div class="auth-container">
       <div class="auth-card">
         <h1 class="auth-title">Welcome Back! 👋</h1>
-        <p class="auth-subtitle">Sign in to continue to Smart Memory</p>
+        <p class="auth-subtitle">Sign in to continue to Lost-and-Found</p>
 
         <form @submit.prevent="handleLogin" class="auth-form">
           <div class="form-group">
