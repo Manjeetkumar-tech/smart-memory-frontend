@@ -136,8 +136,21 @@ async function analyzeImage() {
     const formData = new FormData()
     formData.append('image', lastUploadedFile.value)
     
-    const baseUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/items', '') : 'http://localhost:8080/api'
-    const response = await fetch(`${baseUrl}/ai/analyze`, {
+    const getBaseUrl = () => {
+        const envUrl = import.meta.env.VITE_API_URL
+        if (!envUrl) return 'http://localhost:8080/api'
+        
+        let base = envUrl.replace(/\/items\/?$/, '')
+        if (!base.endsWith('/api')) {
+            base = base.replace(/\/$/, '')
+            if (!base.endsWith('/api')) {
+                base += '/api'
+            }
+        }
+        return base
+    }
+
+    const response = await fetch(`${getBaseUrl()}/ai/analyze`, {
       method: 'POST',
       body: formData
     })

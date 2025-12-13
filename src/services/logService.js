@@ -1,4 +1,18 @@
-const BASE_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL.replace('/items', '')}/logs` : 'http://localhost:8080/api/logs'
+const getBaseUrl = () => {
+    const envUrl = import.meta.env.VITE_API_URL
+    if (!envUrl) return 'http://localhost:8080/api/logs'
+    
+    let base = envUrl.replace(/\/items\/?$/, '')
+    if (!base.endsWith('/api')) {
+      base = base.replace(/\/$/, '')
+      if (!base.endsWith('/api')) {
+        base += '/api'
+      }
+    }
+    return `${base}/logs`
+  }
+  
+  const BASE_URL = getBaseUrl()
 
 export async function fetchLogs(userId) {
   const res = await fetch(`${BASE_URL}?userId=${userId}`)

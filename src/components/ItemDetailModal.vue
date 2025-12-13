@@ -137,8 +137,20 @@ watch(() => props.isOpen, async (isOpen) => {
 async function fetchMatches(itemId) {
   loadingMatches.value = true
   try {
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/items'
-    const response = await fetch(`${baseUrl}/${itemId}/matches`)
+    const getBaseUrl = () => {
+        const envUrl = import.meta.env.VITE_API_URL
+        if (!envUrl) return 'http://localhost:8080/api/items'
+        
+        let base = envUrl.replace(/\/items\/?$/, '')
+        if (!base.endsWith('/api')) {
+            base = base.replace(/\/$/, '')
+            if (!base.endsWith('/api')) {
+                base += '/api'
+            }
+        }
+        return `${base}/items`
+    }
+    const response = await fetch(`${getBaseUrl()}/${itemId}/matches`)
     if (response.ok) {
       matches.value = await response.json()
     }
