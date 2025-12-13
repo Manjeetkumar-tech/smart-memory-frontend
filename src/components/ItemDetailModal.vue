@@ -69,7 +69,7 @@
           💬 Message Owner
         </button>
         <button v-if="!isMyItem && item.status === 'OPEN'" @click="$emit('claim', item.id)" class="btn btn-claim">
-          ✋ Claim Item
+          ✋ {{ item.type === 'FOUND' ? 'Claim Item' : '👀 I Found This' }}
         </button>
         
         <!-- Owner Actions -->
