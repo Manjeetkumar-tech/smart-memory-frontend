@@ -16,14 +16,20 @@ const pinia = createPinia()
 app.use(pinia)
 app.use(router)
 
-app.mount('#app')
-
 // ✅ Persist Firebase user after page reload
+let appMounted = false
+
 onAuthStateChanged(auth, (user) => {
   const userStore = useUserStore()
   if (user) {
     userStore.setUser(user)
   } else {
     userStore.clearUser()
+  }
+  
+  // Wait for Firebase to initialize before mounting
+  if (!appMounted) {
+    app.mount('#app')
+    appMounted = true
   }
 })
