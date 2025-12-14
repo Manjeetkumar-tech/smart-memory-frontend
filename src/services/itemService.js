@@ -16,10 +16,29 @@ const getBaseUrl = () => {
 
 const BASE_URL = getBaseUrl()
 
-export async function fetchItems(search = '') {
-  const url = search
-    ? `${BASE_URL}?search=${encodeURIComponent(search)}`
-    : BASE_URL
+export async function fetchItems(options = {}) {
+  const { 
+    search = '', 
+    page = 0, 
+    size = 10,
+    type = null,
+    status = null,
+    userId = null,
+    excludeResolved = true
+  } = options
+
+  const params = new URLSearchParams({
+    page: page.toString(),
+    size: size.toString(),
+    excludeResolved: excludeResolved.toString()
+  })
+  
+  if (search) params.append('search', search)
+  if (type) params.append('type', type)
+  if (status) params.append('status', status)
+  if (userId) params.append('userId', userId)
+
+  const url = `${BASE_URL}?${params.toString()}`
   const res = await fetch(url)
   return res.json()
 }
