@@ -69,7 +69,7 @@
           💬 Message Owner
         </button>
         <button v-if="!isMyItem && item.status === 'OPEN'" @click="$emit('claim', item.id)" class="btn btn-claim">
-          ✋ {{ item.type === 'FOUND' ? 'Claim Item' : '👀 I Found This' }}
+          ✋ {{ claimButtonText }}
         </button>
         
         <!-- Owner Actions -->
@@ -114,6 +114,16 @@ const userStore = useUserStore()
 const matches = ref([])
 const loadingMatches = ref(false)
 
+const claimButtonText = computed(() => {
+  if (!props.item) return ''
+  console.log('ClaimButton Debug:', { 
+    type: props.item.type, 
+    status: props.item.status,
+    isMyItem: isMyItem.value 
+  })
+  return props.item.type === 'FOUND' ? 'Claim Item' : '👀 I Found This'
+})
+
 const isMyItem = computed(() => {
   const itemUserId = props.item?.userId
   const currentUserId = userStore.user?.uid
@@ -137,20 +147,14 @@ watch(() => props.isOpen, async (isOpen) => {
 async function fetchMatches(itemId) {
   loadingMatches.value = true
   try {
-    const getBaseUrl = () => {
-        const envUrl = import.meta.env.VITE_API_URL
-        if (!envUrl) return 'http://localhost:8080/api/items'
-        
-        let base = envUrl.replace(/\/items\/?$/, '')
-        if (!base.endsWith('/api')) {
-            base = base.replace(/\/$/, '')
-            if (!base.endsWith('/api')) {
-                base += '/api'
-            }
-        }
-        return `${base}/items`
-    }
-    const response = await fetch(`${getBaseUrl()}/${itemId}/matches`)
+    // Simplified URL construction
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/items'
+    // Ensure no double slash if VITE_API_URL has trailing slash
+    const finalUrl = `${baseUrl.replace(/\/$/, '')}/${itemId}/matches`
+    
+    console.log('Fetching Matches from:', finalUrl)
+    
+    const response = await fetch(finalUrl)
     if (response.ok) {
       matches.value = await response.json()
     }

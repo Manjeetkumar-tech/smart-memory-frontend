@@ -169,10 +169,10 @@
             :disabled="claimingItemId === item.id"
             class="btn btn-claim"
           >
-            {{ claimingItemId === item.id ? '⏳ Claiming...' : 'Claim Item' }}
+            {{ claimingItemId === item.id ? '⏳ Processing...' : (item.type === 'LOST' ? '👀 I Found This' : '✋ Claim Item') }}
           </button>
           <span v-if="item.claimedBy" class="claimed-badge">
-            {{ item.claimedBy === userStore.user?.uid ? '✓ Claimed by you' : '✓ Claimed' }}
+            {{ item.claimedBy === userStore.user?.uid ? (item.type === 'LOST' ? '✓ Reported by you' : '✓ Claimed by you') : '✓ Claimed' }}
           </span>
           <button 
             v-if="!isMyItem(item) && item.userId" 
@@ -472,7 +472,13 @@ async function handleClaim(itemId) {
     // 2. Send automatic message to owner
     try {
       const itemType = updated.type === 'LOST' ? 'lost' : 'found'
-      const messageContent = `Hi! I've claimed your ${itemType} item "${updated.title}". I believe this belongs to me. Let's discuss to verify!`
+      let messageContent = ''
+      
+      if (updated.type === 'LOST') {
+        messageContent = `Hi! I found your lost item "${updated.title}". Please confirm if it's yours and let's arrange a handover!`
+      } else {
+        messageContent = `Hi! I've claimed your found item "${updated.title}". I believe this belongs to me. Let's discuss to verify!`
+      }
       
       await sendMessage(
         itemId,
