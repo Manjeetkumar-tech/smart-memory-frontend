@@ -138,9 +138,10 @@ watch(() => props.item, async (newItem) => {
   }
 })
 
-watch(() => props.isOpen, async (isOpen) => {
-  if (isOpen && props.item) {
-    await fetchMatches(props.item.id)
+// Since the modal is v-if'ed, we need to fetch on mount
+onMounted(() => {
+  if (props.isOpen && props.item) {
+    fetchMatches(props.item.id)
   }
 })
 
@@ -155,8 +156,14 @@ async function fetchMatches(itemId) {
     console.log('Fetching Matches from:', finalUrl)
     
     const response = await fetch(finalUrl)
+    console.log('Matches Response Status:', response.status)
+    
     if (response.ok) {
-      matches.value = await response.json()
+      const data = await response.json()
+      console.log('Matches Found:', data.length, data)
+      matches.value = data
+    } else {
+      console.error('Matches fetch failed')
     }
   } catch (e) {
     console.error("Error fetching matches:", e)
