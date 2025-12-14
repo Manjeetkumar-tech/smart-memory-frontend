@@ -21,6 +21,12 @@ const routes = [
     component: () => import('../pages/PostItem.vue'),
     meta: { requiresAuth: true }
   },
+  { 
+    path: '/profile', 
+    name: 'Profile', 
+    component: () => import('../pages/Profile.vue'),
+    meta: { requiresAuth: true }
+  },
   { path: '/forgot-password', name: 'ForgotPassword', component: ForgotPassword }
 ]
 

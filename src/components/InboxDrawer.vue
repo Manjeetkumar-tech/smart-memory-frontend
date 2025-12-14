@@ -42,7 +42,7 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import { getUserMessages, getUnreadMessages } from '@/services/messageService'
-import { fetchItems } from '@/services/itemService'
+import { fetchItems, getItem } from '@/services/itemService'
 
 const props = defineProps({
   isOpen: Boolean,
@@ -68,15 +68,30 @@ async function loadInbox() {
     // 1. Get all messages received by user
     const messages = await getUserMessages(props.currentUserId)
     
-    // 2. Get all items to map titles
-    // Note: In a real app, we'd have a better endpoint for this
-    const allItems = await fetchItems()
-    const itemMap = new Map(allItems.map(i => [i.id, i]))
+    // 2. Identify unique items required
+    const itemIds = [...new Set(messages.map(m => m.itemId))]
+    const itemMap = new Map()
 
-    // 3. Group by itemId
+    // 3. Fetch details for each item
+    // In strict production, we'd want a batch API, but parallel requests work for now
+    await Promise.all(itemIds.map(async (id) => {
+        try {
+            const item = await getItem(id)
+            if (item) itemMap.set(id, item)
+        } catch (e) {
+            console.warn(`Failed to load item details for ${id}`, e)
+            // Create a placeholder item so the chat still works minimally
+            itemMap.set(id, { id, title: 'Unknown Item (Deleted?)', contactInfo: 'Unknown' })
+        }
+    }))
+
+    // 4. Group by itemId
     const groups = {}
     
     messages.forEach(msg => {
+      // If we couldn't load the item, skip or handle gracefully
+      // itemMap has fallback now
+      
       if (!groups[msg.itemId]) {
         groups[msg.itemId] = {
           itemId: msg.itemId,

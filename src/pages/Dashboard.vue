@@ -1,35 +1,36 @@
 <template>
   <div class="dashboard-container">
-    <div class="user-info">
-      <span class="user-email">Logged in as: <strong>{{ userStore.user?.email }}</strong></span>
-      <button @click="logout" class="logout-btn">
-        Logout
-      </button>
-    </div>
     <div class="dashboard-header">
-      <h1 class="dashboard-title">🔍 Lost & Found Dashboard</h1>
+      <h1 class="dashboard-title">🔍 Lost & Found</h1>
       
-      <button 
-        v-if="userStore.user" 
-        @click="isInboxOpen = true" 
-        class="inbox-btn"
-      >
-        📬 Inbox
-        <span v-if="unreadCount > 0" class="global-unread-badge">
-          {{ unreadCount }}
-        </span>
-      </button>
+      <div class="header-actions">
+        <button 
+          v-if="userStore.user" 
+          @click="isInboxOpen = true" 
+          class="icon-btn inbox-btn"
+          title="Inbox"
+        >
+          📬
+          <span v-if="unreadCount > 0" class="unread-badge">
+            {{ unreadCount }}
+          </span>
+        </button>
+
+        <button 
+          v-if="userStore.user"
+          @click="router.push('/profile')"
+          class="icon-btn profile-btn"
+          title="My Profile"
+        >
+          👤
+        </button>
+      </div>
     </div>
 
     <!-- Input Form Removed (Moved to /post) -->
 
     <!-- My Items Toggle -->
-    <div class="my-items-toggle">
-      <label class="toggle-label">
-        <input type="checkbox" v-model="showMyItemsOnly" class="toggle-checkbox" />
-        <span class="toggle-text">Show My Items Only</span>
-      </label>
-    </div>
+    <!-- My Items Filter Moved to Profile Page -->
 
     <!-- Search Bar -->
     <div class="search-container">
@@ -276,7 +277,7 @@ import { fetchItems, createItem, updateItem, deleteItem as apiDeleteItem, resolv
 import { sendMessage, getUnreadMessages } from '@/services/messageService'
 import { useUserStore } from '@/stores/userStore'
 import { auth } from '@/firebase'
-import { signOut } from 'firebase/auth'
+// signOut removed (moved to Profile)
 
 const router = useRouter()
 
@@ -287,7 +288,7 @@ const selectedItem = ref(null)
 const isDetailModalOpen = ref(false)
 const isInboxOpen = ref(false)
 const filterType = ref(null)
-const showMyItemsOnly = ref(false)
+// showMyItemsOnly removed
 const editingItem = ref(null)
 const unreadCount = ref(0)
 const claimingItemId = ref(null)
@@ -378,7 +379,7 @@ onMounted(() => {
 })
 
 // Redefine watchers to trigger reload on filter change
-watch([filterType, showMyItemsOnly, categoryFilter], () => {
+watch([filterType, categoryFilter], () => {
   loadItems(searchQuery.value, true)
 })
 
@@ -419,7 +420,7 @@ async function loadItems(search = '', reset = true) {
       search,
       page: page.value,
       size: 10,
-      userId: showMyItemsOnly.value && userStore.user ? userStore.user.uid : null,
+      userId: null, // Dashboard shows all items (feed), Profile shows "My Items"
       excludeResolved: true // Default behavior
     }
 
@@ -1244,14 +1245,48 @@ function logout() {
   border-color: var(--primary-400);
 }
 
-.global-unread-badge {
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.icon-btn {
+  background: white;
+  border: 1px solid var(--border-color);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.icon-btn:hover {
+  background: var(--bg-tertiary);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.unread-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
   background: var(--error);
   color: white;
-  font-size: 0.75rem;
-  padding: 0.1rem 0.4rem;
+  font-size: 0.7rem;
+  padding: 2px 6px;
   border-radius: 10px;
   min-width: 18px;
   text-align: center;
+}
+
+.dashboard-title {
+  margin: 0; /* Remove header margin reset handled by flex */
 }
 
 .empty-state {
