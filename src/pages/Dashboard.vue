@@ -449,7 +449,7 @@ async function loadItems(search = '', reset = true) {
     // Backend returns Page<Item> { content: [...], last: boolean, totalPages: int, ... }
     let newItems = data.content || []
     
-    // Apply client-side category filter (Temporary workaround until backend supports it)
+    // client-side category filter 
     if (categoryFilter.value && categoryFilter.value !== 'ALL') {
        newItems = newItems.filter(item => item.category === categoryFilter.value)
     }
