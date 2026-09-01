@@ -111,3 +111,9 @@ export async function unresolveItem(id) {
   })
   return res.json()
 }
+
+export async function fetchNearbyItems(lat, lng, radiusKm = 10) {
+  const url = `${BASE_URL}/nearby?lat=${lat}&lng=${lng}&radiusKm=${radiusKm}`
+  const res = await fetch(url, { headers: getAuthHeaders() })
+  return res.json()
+}
